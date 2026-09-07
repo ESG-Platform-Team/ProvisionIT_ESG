@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="background:#171922;border:1px solid #2E323F;padding:22px 24px 18px;font-family:Inter,system-ui,sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px">
+    <div style="font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#F4F5F7">Disclosure Grid</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#6E7383">{{ stamp }}</div>
+  </div>
+  <div style="display:flex;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:center;width:16px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap">Governance practice →</div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="position:relative;width:100%;aspect-ratio:1/1;border-left:1px solid #3A3F4E;border-bottom:1px solid #3A3F4E;background:linear-gradient(#14161e,#1b1e28)">
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#282C38"></div>
+        <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#282C38"></div>
+
+        <div style="position:absolute;left:12px;top:12px;max-width:44%;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;letter-spacing:.1em;text-transform:uppercase;color:#767C8D">Opaque<div style="color:#4E5464;letter-spacing:.02em;text-transform:none;font-size:9px;margin-top:3px">governs well, tells little</div></div>
+        <div style="position:absolute;right:12px;top:12px;max-width:46%;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;letter-spacing:.1em;text-transform:uppercase;color:#A9AEBD">Strong and well evidenced<div style="color:#4E5464;letter-spacing:.02em;text-transform:none;font-size:9px;margin-top:3px">practice matches disclosure</div></div>
+        <div style="position:absolute;left:12px;bottom:12px;max-width:44%;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;letter-spacing:.1em;text-transform:uppercase;color:#767C8D">Practices not shared<div style="color:#4E5464;letter-spacing:.02em;text-transform:none;font-size:9px;margin-top:3px">little seen, little done</div></div>
+        <div style="position:absolute;right:12px;bottom:12px;max-width:46%;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;letter-spacing:.1em;text-transform:uppercase;color:#767C8D">Honest about gaps<div style="color:#4E5464;letter-spacing:.02em;text-transform:none;font-size:9px;margin-top:3px">discloses shortfalls plainly</div></div>
+
+        <sc-if value="{{ peersOn }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ peers }}" as="p" hint-placeholder-count="6">
+            <div style="position:absolute;width:5px;height:5px;border-radius:50%;background:#4A4F5F;left:{{ p.x }}%;bottom:{{ p.y }}%;transform:translate(-50%,50%)"></div>
+          </sc-for>
+        </sc-if>
+
+        <div style="position:absolute;left:{{ x }}%;bottom:0;height:{{ y }}%;border-left:1px dashed rgba(244,191,63,.5)"></div>
+        <div style="position:absolute;left:0;width:{{ x }}%;bottom:{{ y }}%;border-top:1px dashed rgba(244,191,63,.5)"></div>
+
+        <div style="position:absolute;left:{{ x }}%;bottom:{{ y }}%;transform:translate(-50%,50%);display:flex;align-items:center;gap:8px">
+          <div style="width:30px;height:30px;border-radius:8px;background:#F4BF3F;box-shadow:0 0 0 5px rgba(244,191,63,.14);display:flex;align-items:flex-start;justify-content:center;font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:22px;line-height:22px;color:#fff;padding-top:3px">*</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#F4BF3F;white-space:nowrap">{{ label }}</div>
+        </div>
+
+        <div style="position:absolute;left:{{ x }}%;bottom:-1px;transform:translate(-50%,100%);margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#F4BF3F;padding-top:6px">{{ xRead }}</div>
+        <div style="position:absolute;bottom:{{ y }}%;left:-1px;transform:translate(-100%,50%);padding-right:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#F4BF3F">{{ yRead }}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#565C6C">
+        <span>Withholds</span><span style="color:#8A8F9C;letter-spacing:.16em">Transparency →</span><span>Discloses fully</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:540},&quot;x&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:84,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:100},&quot;y&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:72.5,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:100},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;MFG&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;xRead&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;84%&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;yRead&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2.9&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;stamp&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;G-4thEd v1.0 · n=284 peers&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showPeers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    return {
+      x: p.x ?? 84,
+      y: p.y ?? 72.5,
+      label: p.label ?? "MFG",
+      xRead: p.xRead ?? "84%",
+      yRead: p.yRead ?? "2.9",
+      stamp: p.stamp ?? "G-4thEd v1.0 · n=284 peers",
+      peersOn: p.showPeers ?? true,
+      peers: [
+        {x:22,y:31},{x:38,y:18},{x:57,y:44},{x:66,y:61},{x:74,y:39},
+        {x:81,y:55},{x:44,y:66},{x:90,y:81},{x:29,y:58},{x:63,y:24},
+        {x:70,y:88},{x:52,y:12},{x:88,y:64},{x:35,y:47}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

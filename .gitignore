@@ -1,1 +1,10 @@
+.env
+*.pem
+*.key
+**/data/raw/
+**/data/llm_cache/
+__pycache__/
+*.pyc
+.venv/
+node_modules/
 .DS_Store
