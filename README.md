@@ -1,4 +1,5 @@
-ESG Governance Assessment Platform
+###ESG Governance Assessment Platform
+
 Rates ASX listed companies against the ASX Corporate Governance Council
 Principles and Recommendations, using free public sources only.
 
@@ -10,7 +11,7 @@ governance documents, extracts disclosures with a language model, scores them
 with deterministic code, and reports the result so every finding traces back to
 a quoted passage on a numbered page in a stored document.
 
-Three properties the design protects:
+###Three properties the design protects:
 
 Two figures, never one. Transparency asks whether the company told us.
 Practice asks whether they are doing it. They are never averaged.
@@ -20,7 +21,7 @@ happen.
 Source quality never enters a score. It travels alongside as a separate
 confidence letter.
 
-Layout
+###Layout
     backend/    FastAPI service: harvest, extract, read, score
     frontend/   Six screen interface, static, no build step
 
