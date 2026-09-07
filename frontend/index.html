@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script>window.PROVISION_API_BASE = "http://localhost:8080";</script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link href="./vendor/fonts.css" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0E0F14;color:#0E0F14;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+  *{box-sizing:border-box}
+  a{color:#E2A61E;text-decoration:none}
+  a:hover{color:#F4BF3F}
+  button{font-family:inherit}
+  input{font-family:inherit}
+  :focus-visible{outline:2px solid #F4BF3F;outline-offset:3px}
+  ::selection{background:#F4BF3F;color:#0E0F14}
+  @keyframes pi-fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes pi-spin{to{transform:rotate(360deg)}}
+  @keyframes pi-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+  @keyframes pi-ping{0%{box-shadow:0 0 0 0 rgba(244,191,63,.5)}100%{box-shadow:0 0 0 14px rgba(244,191,63,0)}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+</style>
+</helmet>
+
+<div style="font-family:Inter,system-ui,sans-serif;background:#0E0F14;min-height:100vh">
+
+  <div style="position:fixed;top:0;left:0;right:0;height:2px;z-index:40;background:transparent"><div style="height:2px;background:#F4BF3F;width:{{ progress }}%"></div></div>
+
+  <div style="position:sticky;top:0;z-index:30;background:rgba(14,15,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid #2E323F">
+    <div style="max-width:1240px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;gap:26px;flex-wrap:wrap">
+      <button onClick="{{ goSearch }}" style="display:flex;align-items:center;gap:14px;background:transparent;border:none;cursor:pointer;padding:4px;margin-right:6px">
+        <span style="width:46px;height:52px;border-radius:11px;background:#F4BF3F;display:flex;align-items:flex-start;justify-content:center;font-family:Archivo,sans-serif;font-weight:800;font-size:38px;line-height:36px;color:#fff;padding-top:4px;transition:transform .32s cubic-bezier(.34,1.56,.64,1),box-shadow .32s ease;box-shadow:0 0 0 0 rgba(244,191,63,0)" style-hover="transform:scale(1.22) rotate(-4deg);box-shadow:0 14px 34px rgba(244,191,63,.34)">*</span>
+        <span style="font-family:Archivo,sans-serif;font-weight:700;font-size:19px;color:#F4F5F7;letter-spacing:.01em;transition:color .2s" style-hover="color:#F4BF3F">Provision IT</span>
+      </button>
+      <div style="width:1px;height:26px;background:#2E323F"></div>
+      <div style="display:flex;gap:2px;flex-wrap:wrap">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+          <button onClick="{{ t.go }}" style="background:transparent;border:none;border-bottom:2px solid {{ t.line }};color:{{ t.color }};padding:9px 12px 7px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .2s,border-color .2s" style-hover="color:#F4F5F7">{{ t.name }}</button>
+        </sc-for>
+      </div>
+      <div style="flex:1"></div>
+      <button onClick="{{ toggleLive }}" style="display:flex;align-items:center;gap:9px;background:transparent;border:1px solid {{ live.bd }};padding:7px 12px;cursor:pointer;transition:border-color .2s">
+        <span style="width:7px;height:7px;border-radius:50%;background:{{ live.dot }}"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ live.fg }}">{{ live.label }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ SEARCH ============ -->
+  <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <div style="background:radial-gradient(120% 90% at 78% 0%,#20232F 0%,#0E0F14 58%);padding:104px 32px 48px;position:relative;overflow:hidden">
+      <div style="max-width:960px;margin:0 auto;position:relative">
+        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Governance · ASX listed entities</div>
+        <h1 data-reveal="1" style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(40px,6.4vw,66px);line-height:.97;letter-spacing:-.012em;text-transform:uppercase;color:#F4F5F7;margin:0 0 22px;max-width:19ch;text-wrap:pretty">Every claim, back to the page it came from</h1>
+        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an Australian listed entity, or paste a company website. We retrieve what is publicly and freely available, assess it against the ASX Corporate Governance Council Principles, and link every finding to the passage it rests on.</p>
+
+        <div data-reveal="1" style="max-width:780px;position:relative">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:280px;display:flex;align-items:center;background:#0E0F14;border:1px solid {{ field.bd }};padding:0 16px;transition:border-color .2s">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#565C6C;letter-spacing:.1em;margin-right:12px">↳</span>
+              <input value="{{ query }}" onChange="{{ onQuery }}" onKeyDown="{{ onKey }}" onFocus="{{ onFocus }}" placeholder="Company name, ASX code, or https://…" style="flex:1;background:transparent;border:none;outline:none;color:#F4F5F7;font-size:16px;padding:19px 0">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E7383;letter-spacing:.08em">{{ hintCode }}</span>
+            </div>
+            <button onClick="{{ assess }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:0 36px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;transition:transform .18s ease,background .18s ease" style-hover="background:#E2A61E;transform:translateY(-2px)">Assess</button>
+          </div>
+          <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#171922;border:1px solid #2E323F;z-index:12;box-shadow:0 24px 60px rgba(0,0,0,.55)">
+              <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="4">
+                <button onClick="{{ s.pick }}" style="width:100%;text-align:left;background:transparent;border:none;border-bottom:1px solid #22252F;padding:13px 16px;cursor:pointer;display:flex;justify-content:space-between;gap:14px;align-items:center;transition:background .15s" style-hover="background:#1F2230">
+                  <span style="font-size:14px;color:#E7E8EC">{{ s.name }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6E7383">{{ s.meta }}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6E7383;line-height:1.7">No stored entity matches. Press Assess to attempt a live retrieval against this name or URL.</div>
+              </sc-if>
+            </div>
+          </sc-if>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin:14px 0 34px">{{ fieldNote }}</div>
+        </div>
+
+        <div data-reveal="1">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Narrow the profile · {{ chipCount }}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+              <button onClick="{{ c.toggle }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:{{ c.bg }};border:1px solid {{ c.bd }};color:{{ c.fg }};transition:all .2s" style-hover="border-color:#F4BF3F">{{ c.name }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="line-height:0;background:#F4F5F7">
+      <svg viewBox="0 0 1440 90" preserveAspectRatio="none" style="display:block;width:100%;height:80px"><path d="M0,0 C240,74 480,74 720,44 C960,14 1200,14 1440,52 L1440,0 Z" fill="#171922"></path><path d="M0,10 C240,84 480,84 720,54 C960,24 1200,24 1440,62 L1440,0 C1200,14 960,14 720,44 C480,74 240,74 0,0 Z" fill="#2A2C3A" opacity=".9"></path></svg>
+    </div>
+
+    <div style="background:#F4F5F7;padding:8px 32px 96px">
+      <div style="max-width:1240px;margin:0 auto">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:36px;margin-bottom:76px">
+          <sc-for list="{{ beliefs }}" as="b" hint-placeholder-count="3">
+            <div data-reveal="1">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8A8F9C;margin-bottom:12px">{{ b.n }}</div>
+              <div style="font-family:Archivo,sans-serif;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:#0E0F14;margin-bottom:10px;line-height:1.3">{{ b.head }}</div>
+              <p style="margin:0;font-size:13.5px;line-height:1.65;color:#4A4E5C">{{ b.body }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(340px,480px) 1fr;gap:56px;align-items:start">
+          <div data-reveal="1"><dc-import name="DisclosureGrid" show-peers="{{ peerField }}" hint-size="100%,520px"></dc-import></div>
+          <div data-reveal="1" style="padding-top:8px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A8F9C;margin-bottom:14px">The signature read</div>
+            <h2 style="font-family:Archivo,sans-serif;font-weight:800;font-size:34px;line-height:1.05;text-transform:uppercase;color:#0E0F14;margin:0 0 18px;max-width:22ch">Two results, never one number</h2>
+            <p style="font-size:14.5px;line-height:1.7;color:#4A4E5C;margin:0 0 26px;max-width:52ch">Transparency runs across the bottom. Governance practice runs up the side. The two are read together and never averaged, because a company can disclose honestly and still govern badly — and that is usually the most useful thing we find.</p>
+            <div style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #DCDEE4;padding-top:22px">
+              <sc-for list="{{ gridNotes }}" as="g" hint-placeholder-count="4">
+                <div style="display:flex;gap:14px;align-items:baseline">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#0E0F14;min-width:150px">{{ g.k }}</span>
+                  <span style="font-size:13px;line-height:1.6;color:#5A5F6D">{{ g.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ RETRIEVAL ============ -->
+  <sc-if value="{{ isRetrieval }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#0E0F14;min-height:calc(100vh - 66px);padding:80px 32px 96px">
+    <div style="max-width:860px;margin:0 auto">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <span style="width:9px;height:9px;border-radius:50%;background:#F4BF3F;animation:{{ run.anim }}"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#F4BF3F">{{ run.stage }}</span>
+      </div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:46px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 10px">Retrieving sources</h1>
+      <div style="font-size:16px;color:#9AA0AE;margin-bottom:6px">{{ run.company }}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin-bottom:40px">{{ run.meta }}</div>
+
+      <div style="height:2px;background:#2A2C3A;margin-bottom:8px"><div style="width:{{ run.pct }}%;height:2px;background:#F4BF3F;transition:width .45s ease"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6E7383;margin-bottom:34px"><span>{{ run.count }}</span><span>{{ run.mode }}</span></div>
+
+      <div style="border-top:1px solid #2E323F">
+        <sc-for list="{{ log }}" as="s" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;gap:16px;padding:15px 4px;border-bottom:1px solid #22252F;animation:{{ s.anim }}">
+            <div style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ s.dot }}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;color:#E7E8EC">{{ s.name }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#565C6C;margin-top:4px">{{ s.loc }}</div>
+            </div>
+            <div style="text-align:right;flex:none">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ s.color }}">{{ s.status }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#454A59;margin-top:4px">{{ s.timing }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ run.done }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:36px;align-items:center">
+          <button onClick="{{ openResult }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:15px 30px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;transition:transform .18s,background .18s" style-hover="background:#E2A61E;transform:translateY(-2px)">{{ run.cta }}</button>
+          <button onClick="{{ goSearch }}" style="background:transparent;border:1px solid #2E323F;color:#9AA0AE;padding:15px 26px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#565C6C;color:#E7E8EC">New search</button>
+          <span style="font-size:12.5px;color:#565C6C;line-height:1.5;max-width:34ch">Sources are captured and stored on the assessment date so the result can be reproduced.</span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ ASSESSMENT ============ -->
+  <sc-if value="{{ isAssessment }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <div style="background:#0E0F14;padding:52px 32px 46px;border-bottom:1px solid #2E323F">
+      <div style="max-width:1240px;margin:0 auto;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between">
+        <div>
+          <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(34px,5vw,52px);line-height:.98;letter-spacing:-.005em;text-transform:uppercase;color:#F4F5F7;margin:0 0 16px">{{ a.name }}</h1>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
+            <span>ASX: {{ a.code }}</span><span style="color:#3A3F4E">/</span><span>{{ a.tier }}</span><span style="color:#3A3F4E">/</span><span>{{ a.managed }}</span><span style="color:#3A3F4E">/</span><span>Assessed {{ a.date }}</span><span style="color:#3A3F4E">/</span><span>{{ a.matrix }}</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6E7383;margin-bottom:8px">Governance band</div>
+          <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(30px,4.4vw,44px);line-height:1;text-transform:uppercase;color:#F4BF3F;margin-bottom:14px">{{ a.band }}</div>
+          <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
+            <div style="width:30px;height:30px;border-radius:50%;border:1px solid #565C6C;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#F4F5F7">{{ a.conf }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A8F9C;text-align:left;line-height:1.5">Confidence<br>in the evidence</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#F4F5F7;padding:0 32px 80px">
+      <div style="max-width:1240px;margin:0 auto">
+
+        <div data-reveal="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));background:#fff;border:1px solid #DCDEE4;border-top:none;margin-bottom:44px">
+          <sc-for list="{{ a.stats }}" as="s" hint-placeholder-count="5">
+            <div style="padding:26px 24px;border-left:1px solid #E7E8EC">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:34px;line-height:1;color:#0E0F14;margin-bottom:12px">{{ s.v }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C;line-height:1.6">{{ s.k }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(340px,1fr) minmax(320px,420px);gap:40px;align-items:start;margin-bottom:56px">
+          <div data-reveal="1"><dc-import name="DisclosureGrid" show-peers="{{ peerField }}" x="{{ a.x }}" y="{{ a.y }}" label="{{ a.code }}" x-read="{{ a.xRead }}" y-read="{{ a.yRead }}" stamp="{{ a.stamp }}" hint-size="100%,540px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <sc-for list="{{ a.meters }}" as="m" hint-placeholder-count="3">
+              <div data-reveal="1" style="background:#fff;border:1px solid #DCDEE4;padding:22px 24px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px">
+                  <div style="font-family:Archivo,sans-serif;font-weight:700;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#0E0F14">{{ m.name }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#0E0F14">{{ m.value }}</div>
+                </div>
+                <div style="display:flex;gap:3px;margin-bottom:14px">
+                  <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="10">
+                    <div style="flex:1;height:8px;background:{{ c.bg }};transition:background .5s ease"></div>
+                  </sc-for>
+                </div>
+                <div style="font-size:12.5px;line-height:1.6;color:#5A5F6D">{{ m.note }}</div>
+              </div>
+            </sc-for>
+            <div data-reveal="1" style="border:1px dashed #C6CAD4;padding:18px 22px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C;margin-bottom:10px">Reading the three together</div>
+              <div style="font-size:12.5px;line-height:1.65;color:#4A4E5C">Transparency and practice are never merged. Evidence strength qualifies both — it says how much weight the two can carry, not how good the company is.</div>
+            </div>
+          </div>
+        </div>
+
+        <div data-reveal="1" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:18px">
+          <h2 style="font-family:Archivo,sans-serif;font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;color:#0E0F14;margin:0">The eight principles</h2>
+          <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+            <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:11px;height:11px;border-radius:50%;background:{{ l.bg }};border:1px {{ l.style }} {{ l.bd }}"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#6A6F7D">{{ l.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #DCDEE4">
+          <sc-for list="{{ a.principles }}" as="p" hint-placeholder-count="8">
+            <div style="border-bottom:1px solid #E7E8EC">
+              <button onClick="{{ p.toggle }}" style="width:100%;background:transparent;border:none;border-left:3px solid {{ p.mark }};cursor:pointer;text-align:left;display:grid;grid-template-columns:56px 1fr auto auto 28px;gap:18px;align-items:center;padding:20px 22px;transition:background .18s,border-color .18s" style-hover="background:#FAFAFB">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A8F9C">{{ p.n }}</span>
+                <span style="font-family:Archivo,sans-serif;font-weight:600;font-size:15px;color:#0E0F14;letter-spacing:.01em">{{ p.name }}</span>
+                <span style="display:flex;gap:5px">
+                  <sc-for list="{{ p.dots }}" as="d" hint-placeholder-count="4">
+                    <span style="width:9px;height:9px;border-radius:50%;background:{{ d.bg }};border:1px solid {{ d.bd }}"></span>
+                  </sc-for>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ p.stateColor }};min-width:150px;text-align:right">{{ p.state }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A8F9C;text-align:right">{{ p.caret }}</span>
+              </button>
+              <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#FAFAFB;border-top:1px solid #E7E8EC;padding:8px 22px 22px">
+                  <sc-for list="{{ p.findings }}" as="f" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:76px 1fr;gap:18px;padding:20px 0;border-bottom:1px solid #EDEEF1">
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#0E0F14;padding-top:2px">{{ f.id }}</div>
+                      <div>
+                        <div style="font-size:14px;line-height:1.6;color:#2A2C3A;max-width:76ch;margin-bottom:12px">{{ f.text }}</div>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:5px 11px;border-radius:999px;background:{{ f.pillBg }};color:{{ f.pillFg }};border:{{ f.pillBd }}">{{ f.state }}</span>
+                          <span style="display:flex;gap:5px">
+                            <sc-for list="{{ f.dots }}" as="d" hint-placeholder-count="4">
+                              <span style="width:8px;height:8px;border-radius:50%;background:{{ d.bg }};border:1px solid {{ d.bd }}"></span>
+                            </sc-for>
+                          </span>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#A0A5B2">{{ f.note }}</span>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                          <sc-for list="{{ f.sources }}" as="s" hint-placeholder-count="2">
+                            <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid #DCDEE4;border-radius:999px;background:#fff;transition:border-color .18s,transform .18s" style-hover="border-color:#0E0F14;transform:translateY(-1px)">
+                              <span style="width:19px;height:19px;border-radius:50%;background:#0E0F14;color:#F4F5F7;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px">{{ s.g }}</span>
+                              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#4A4E5C">{{ s.loc }}</span>
+                            </span>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div data-reveal="1" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:32px">
+          <button onClick="{{ exportJson }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Export JSON</button>
+          <button onClick="{{ exportPdf }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Export PDF</button>
+          <button onClick="{{ goHistory }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Compare with last assessment</button>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">{{ exportNote }}</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.8;letter-spacing:.06em;color:#8A8F9C;margin-top:18px;max-width:80ch">Sources were captured on {{ a.date }} and stored with the assessment, so this result can be reproduced exactly as issued.</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ MOBILE ASSESSMENT ============ -->
+  <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#171922;padding:48px 24px 80px">
+    <div style="max-width:430px;margin:0 auto">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:16px;text-align:center">Assessment · 390 px</div>
+      <div style="background:#F4F5F7;border:1px solid #2E323F">
+        <div style="background:#0E0F14;padding:22px 18px 20px">
+          <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:26px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 12px">{{ a.name }}</h1>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.9;letter-spacing:.12em;text-transform:uppercase;color:#8A8F9C">{{ a.code }} · {{ a.tier }}<br>{{ a.date }} · {{ a.matrix }}</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #2E323F">
+            <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;color:#F4BF3F;line-height:1">{{ a.band }}</div>
+            <div style="width:28px;height:28px;border-radius:50%;border:1px solid #565C6C;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#F4F5F7;flex:none">{{ a.conf }}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;background:#fff;border-bottom:1px solid #DCDEE4">
+          <sc-for list="{{ a.stats }}" as="s" hint-placeholder-count="5">
+            <div style="padding:14px 16px;border-top:1px solid #E7E8EC;border-left:1px solid #E7E8EC">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#0E0F14">{{ s.v }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A8F9C;margin-top:6px;line-height:1.5">{{ s.k }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:16px">
+          <dc-import name="DisclosureGrid" show-peers="{{ false }}" x="{{ a.x }}" y="{{ a.y }}" label="{{ a.code }}" x-read="{{ a.xRead }}" y-read="{{ a.yRead }}" stamp="{{ a.matrix }}" hint-size="100%,400px"></dc-import>
+        </div>
+        <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ a.meters }}" as="m" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #DCDEE4;padding:14px 16px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+                <span style="font-family:Archivo,sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#0E0F14">{{ m.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:#0E0F14">{{ m.value }}</span>
+              </div>
+              <div style="display:flex;gap:2px">
+                <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="10">
+                  <div style="flex:1;height:6px;background:{{ c.bg }}"></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:0 16px 20px">
+          <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#0E0F14;margin-bottom:12px">Principles</div>
+          <div style="background:#fff;border:1px solid #DCDEE4">
+            <sc-for list="{{ a.principles }}" as="p" hint-placeholder-count="8">
+              <div style="border-bottom:1px solid #E7E8EC">
+                <button onClick="{{ p.toggle }}" style="width:100%;background:transparent;border:none;text-align:left;cursor:pointer;padding:14px">
+                  <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A8F9C;flex:none">{{ p.n }}</span>
+                    <span style="flex:1;font-family:Archivo,sans-serif;font-weight:600;font-size:13px;line-height:1.4;color:#0E0F14">{{ p.name }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A8F9C;flex:none">{{ p.caret }}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding-left:32px">
+                    <span style="display:flex;gap:4px">
+                      <sc-for list="{{ p.dots }}" as="d" hint-placeholder-count="4">
+                        <span style="width:8px;height:8px;border-radius:50%;background:{{ d.bg }};border:1px solid {{ d.bd }}"></span>
+                      </sc-for>
+                    </span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:{{ p.stateColor }}">{{ p.state }}</span>
+                  </div>
+                </button>
+                <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#FAFAFB;border-top:1px solid #E7E8EC;padding:4px 14px 14px">
+                    <sc-for list="{{ p.findings }}" as="f" hint-placeholder-count="2">
+                      <div style="padding:14px 0;border-bottom:1px solid #EDEEF1">
+                        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#0E0F14;margin-bottom:8px">{{ f.id }}</div>
+                        <div style="font-size:13px;line-height:1.6;color:#2A2C3A;margin-bottom:12px">{{ f.text }}</div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:{{ f.pillBg }};color:{{ f.pillFg }};border:{{ f.pillBd }}">{{ f.state }}</span>
+                          <span style="display:flex;gap:4px">
+                            <sc-for list="{{ f.dots }}" as="d" hint-placeholder-count="4">
+                              <span style="width:8px;height:8px;border-radius:50%;background:{{ d.bg }};border:1px solid {{ d.bd }}"></span>
+                            </sc-for>
+                          </span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+                          <sc-for list="{{ f.sources }}" as="s" hint-placeholder-count="2">
+                            <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid #DCDEE4;border-radius:999px;background:#fff">
+                              <span style="width:19px;height:19px;border-radius:50%;background:#0E0F14;color:#F4F5F7;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px">{{ s.g }}</span>
+                              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#4A4E5C">{{ s.loc }}</span>
+                            </span>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ INSUFFICIENT EVIDENCE ============ -->
+  <sc-if value="{{ isInsufficient }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#171922;min-height:calc(100vh - 66px);display:flex;align-items:center;justify-content:center;padding:64px 24px">
+    <div style="width:100%;max-width:620px;background:#0E0F14;border:1px solid #2E323F;padding:44px 44px 38px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:22px">Result · Insufficient evidence</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:36px;line-height:1.05;text-transform:uppercase;color:#F4F5F7;margin:0 0 18px">Not enough evidence to rate</h1>
+      <p style="font-size:15px;line-height:1.7;color:#9AA0AE;margin:0 0 30px;max-width:56ch">{{ ins.sentence }}</p>
+      <div style="border-top:1px solid #2E323F">
+        <sc-for list="{{ ins.docs }}" as="d" hint-placeholder-count="5">
+          <div style="display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:14px 0;border-bottom:1px solid #22252F">
+            <span style="font-size:14px;color:#E7E8EC">{{ d.name }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ d.color }};text-align:right;flex:none">{{ d.status }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:30px">
+        <button onClick="{{ retry }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">Retry retrieval</button>
+        <button onClick="{{ addSource }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">Add a source manually</button>
+      </div>
+      <sc-if value="{{ ins.adding }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input value="{{ ins.url }}" onChange="{{ onManualUrl }}" placeholder="https://example.com.au/governance.pdf" style="flex:1;min-width:240px;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:13px 14px;outline:none">
+          <button onClick="{{ submitManual }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:13px 20px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase">Retrieve</button>
+        </div>
+      </sc-if>
+      <div style="font-size:12.5px;line-height:1.7;color:#565C6C;margin-top:24px">Declining to rate is a result, not a failure. The attempt, its date and the gaps are stored in history.</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ HISTORY ============ -->
+  <sc-if value="{{ isHistory }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#F4F5F7;min-height:calc(100vh - 66px);padding:64px 32px 96px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:16px">Previous assessments · {{ historyCount }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:42px;line-height:1;text-transform:uppercase;color:#0E0F14;margin:0 0 12px">History</h1>
+      <p style="font-size:14.5px;line-height:1.7;color:#5A5F6D;max-width:62ch;margin:0 0 36px">Each record keeps the matrix version it was assessed under. A band that moves between assessments may reflect a changed company, a changed matrix, or better retrieval — the version stamp is how you tell which. Runs you make in this session are stored and appear here.</p>
+      <div style="background:#fff;border:1px solid #DCDEE4">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1.4fr 1fr 40px;gap:18px;padding:14px 22px;border-bottom:1px solid #DCDEE4;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
+          <span>Company</span><span>Assessed</span><span>Result</span><span>Matrix</span><span></span>
+        </div>
+        <sc-for list="{{ history }}" as="h" hint-placeholder-count="6">
+          <button onClick="{{ h.open }}" style="width:100%;text-align:left;display:grid;grid-template-columns:2fr 1fr 1.4fr 1fr 40px;gap:18px;padding:18px 22px;border:none;border-bottom:1px solid #EDEEF1;align-items:center;background:{{ h.rowBg }};cursor:pointer;transition:background .18s" style-hover="background:#F7F7F9">
+            <span>
+              <span style="display:block;font-size:14.5px;color:#0E0F14;font-weight:500">{{ h.name }}</span>
+              <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#8A8F9C;margin-top:4px">{{ h.code }}</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#4A4E5C">{{ h.date }}</span>
+            <span style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:Archivo,sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:{{ h.bandColor }}">{{ h.band }}</span>
+              <span style="width:22px;height:22px;border-radius:50%;border:1px solid {{ h.confBd }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ h.confFg }};flex:none">{{ h.conf }}</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#6A6F7D">{{ h.matrix }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B6BAC6;text-align:right">→</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">
+        <span>MFG assessed twice — Developing C → Established B under a newer matrix</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <div style="background:#0E0F14;border-top:1px solid #2E323F;padding:28px 32px">
+    <div style="max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#565C6C">
+      <span>Provision IT · Melbourne · since 2006</span>
+      <span>Free public sources only · bands not scores · every claim linked</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showPeerField&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Disclosure Grid&quot;},&quot;expandAll&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Principles&quot;}}">
+const INK = "#0E0F14", MID = "#4A4E5C", AMB = "#F4BF3F", DEEP = "#8A6A12";
+const PILL = {
+  "Evidenced": { pillBg: INK, pillFg: "#F4F5F7", pillBd: "1px solid " + INK },
+  "Not disclosed": { pillBg: "transparent", pillFg: MID, pillBd: "1px dashed #9AA0AE" },
+  "Not required": { pillBg: "#E7E8EC", pillFg: "#9AA0AE", pillBd: "1px solid #E7E8EC" },
+  "Departs, explained": { pillBg: "rgba(244,191,63,.18)", pillFg: DEEP, pillBd: "1px solid " + AMB },
+  "Not retrieved": { pillBg: "transparent", pillFg: MID, pillBd: "1px dotted #8A8F9C" }
+};
+const dots = (level, amber) => [0,1,2,3].map(i => i < level
+  ? { bg: amber ? AMB : INK, bd: amber ? AMB : INK }
+  : { bg: "transparent", bd: "#B6BAC6" });
+const ramp = (n, filled) => Array.from({ length: n }, (_, i) => ({ bg: i < filled ? INK : "#E7E8EC" }));
+
+// ---- criteria corpus (shared text) -------------------------------------------------
+const C = [
+  ["01","Lay solid foundations for management and oversight",[
+    ["G1.1","The board charter sets out the respective roles and responsibilities of the board, the chair and management, and is publicly available.",4,"Evidenced","Board charter, current",[["A","Board charter p.2"],["A","Gov statement p.4"]]],
+    ["G1.2","Appropriate checks are undertaken before appointing a director, and material information relevant to a decision on election is provided to security holders.",3,"Evidenced","Checks described, scope general",[["B","Notice of meeting p.6"]]],
+    ["G1.5","A measurable objective for gender diversity is stated, with progress against it reported for the period.",3,"Evidenced","Objective set, progress reported",[["A","Annual report p.31"]]],
+    ["G1.7","A process for periodically evaluating the performance of senior executives is disclosed.",1,"Not disclosed","No process described in public documents",[]],
+    ["G1.3","A written agreement setting out the terms of appointment is in place with each director and senior executive.",0,"Not required","Confidential terms, criterion not assessed publicly",[]]]],
+  ["02","Structure the board to be effective and add value",[
+    ["G2.1","A nomination committee exists with a majority of independent directors and a disclosed charter.",4,"Evidenced","Committee charter, 2026",[["A","Nomination charter p.1"]]],
+    ["G2.3","The names of directors considered independent are disclosed, with the length of service of each.",4,"Evidenced","Names and tenure tabled",[["A","Gov statement p.10"]]],
+    ["G2.4","A majority of the board is independent, with independence assessed annually against stated criteria.",4,"Evidenced","7 of 11 directors independent",[["A","Gov statement p.12"],["B","Annual report p.48"]]],
+    ["G2.5","The chair is an independent director and is not the chief executive officer.",3,"Evidenced","Roles separated, chair independent",[["A","Gov statement p.11"]]],
+    ["G2.6","An induction programme and ongoing professional development for directors are described.",0,"Not required","Entity below threshold for this criterion",[]]]],
+  ["03","Instil a culture of acting lawfully, ethically and responsibly",[
+    ["G3.1","A statement of values is articulated and disclosed.",4,"Evidenced","Values published",[["A","Code of conduct p.1"]]],
+    ["G3.2","A code of conduct for directors, senior executives and employees is disclosed, and the board is informed of material breaches.",3,"Evidenced","Code found, breach reporting stated",[["B","Code of conduct p.4"]]],
+    ["G3.3","A whistleblower policy is disclosed and material incidents are reported to the board.",3,"Evidenced","Policy found, reporting line described",[["C","Website /policies"]]],
+    ["G3.4","An anti-bribery and corruption policy is disclosed.",0,"Not retrieved","Linked PDF returned 404 at retrieval",[]]]],
+  ["04","Safeguard the integrity of corporate reports",[
+    ["G4.1","An audit committee of at least three members, all non-executive and a majority independent, chaired by an independent director who is not the board chair.",4,"Evidenced","Composition verified",[["A","Audit charter p.2"],["A","Annual report p.52"]]],
+    ["G4.2","Before approving financial statements, the board receives declarations from the chief executive and chief financial officer that the records are properly maintained.",4,"Evidenced","Declarations received and noted",[["A","Annual report p.55"]]],
+    ["G4.3","The process followed to verify the integrity of periodic reports that are not audited or reviewed is disclosed.",3,"Evidenced","Verification process set out",[["B","Gov statement p.19"]]],
+    ["G4.4","The external auditor attends the annual meeting and is available to answer questions about the audit.",0,"Not required","Attendance not a disclosure requirement for this entity",[]]]],
+  ["05","Make timely and balanced disclosure",[
+    ["G5.1","A written policy for complying with continuous disclosure obligations is disclosed.",4,"Evidenced","Policy current, reviewed 2026",[["A","Disclosure policy p.1"]]],
+    ["G5.2","The board receives copies of all material market announcements promptly after release.",4,"Evidenced","Stated and dated",[["A","Gov statement p.22"]]],
+    ["G5.3","New and substantive investor or analyst presentations are released ahead of the presentation.",0,"Not required","No investor presentations in the period",[]]]],
+  ["06","Respect the rights of security holders",[
+    ["G6.1","Information about the entity and its governance is available on the website.",4,"Evidenced","Investor centre complete",[["A","Website /investors"]]],
+    ["G6.2","An investor relations programme facilitating two-way communication with security holders is disclosed.",4,"Evidenced","Programme described, contacts listed",[["A","Annual report p.24"]]],
+    ["G6.3","Security holders are given the option to receive communications from, and send communications to, the entity electronically.",3,"Evidenced","Electronic election offered",[["B","Notice of meeting p.2"]]],
+    ["G6.4","All substantive resolutions at security holder meetings are decided by a poll rather than a show of hands.",4,"Evidenced","Poll used, 2025 AGM",[["A","AGM results p.1"]]]]],
+  ["07","Recognise and manage risk",[
+    ["G7.1","A risk committee of at least three members, a majority independent and chaired by an independent director, with a disclosed charter.",4,"Evidenced","Committee charter, composition tabled",[["A","Risk charter p.1"],["B","Annual report p.57"]]],
+    ["G7.2","The risk management framework is reviewed at least annually, and that review is disclosed as having occurred.",3,"Evidenced","Review noted, date absent",[["C","Gov statement p.26"]]],
+    ["G7.3","An internal audit function is disclosed, with how it is structured and what role it performs.",1,"Not disclosed","Function referenced without structure or role",[]],
+    ["G7.4","Material exposure to environmental and social risks is disclosed, with how those risks are managed.",0,"Not disclosed","Sustainability report scanned, text partial",[["C","Sustainability rpt p.8"]]]]],
+  ["08","Remunerate fairly and responsibly",[
+    ["G8.1","A remuneration committee of at least three members, a majority independent and chaired by an independent director.",0,"Departs, explained","Departure disclosed with reasons",[["A","Gov statement p.29"]]],
+    ["G8.2","Policies for the remuneration of non-executive directors and of executive directors are separately disclosed.",0,"Departs, explained","Board of five handles remuneration in full",[["B","Annual report p.61"]]]]]
+];
+
+// Maps a completed backend assessment onto the exact shape assess() returns, so
+// every screen renders live data without a single component change. If this
+// function is correct, nothing else in the page needs to know the backend exists.
+function assessFromApi(payload) {
+  const res = payload.result || {};
+  const counts = res.counts || {};
+  const declined = res.band === "INSUFFICIENT_EVIDENCE";
+
+  const STATE = {
+    DISCLOSED: "Evidenced",
+    NOT_DISCLOSED: "Not disclosed",
+    NOT_DISCLOSED_EXPLAINED: "Departs, explained",
+    NOT_APPLICABLE: "Not required",
+    EVIDENCE_GAP: "Not retrieved"
+  };
+  const BAND = {
+    LEADING: "Leading", ESTABLISHED: "Established", DEVELOPING: "Developing",
+    MINIMAL: "Minimal", NOT_EVIDENCED: "Not evidenced",
+    INSUFFICIENT_EVIDENCE: "Not rated", DEPARTS_EXPLAINED: "Departs, explained"
+  };
+
+  const principles = (payload.principles || []).map(p => {
+    const findings = (p.criteria || []).map(row => {
+      const state = STATE[row.status] || "Not retrieved";
+      const departs = state === "Departs, explained";
+      // maturity is null for gaps, not applicable and explained departures.
+      // Zero filled dots is the correct drawing for all three, and it is not
+      // the same claim as a maturity of zero.
+      const level = row.maturity == null ? 0 : row.maturity;
+      const pill = PILL[state];
+      return {
+        id: row.criterionCode,
+        text: row.question,
+        state,
+        note: row.rationale || "",
+        dots: dots(level, departs),
+        sources: (row.evidence || []).map(e => ({
+          g: e.sourceGrade || "C",
+          loc: e.locator || "location not recorded"
+        })),
+        pillBg: pill.pillBg, pillFg: pill.pillFg, pillBd: pill.pillBd,
+        level
+      };
+    });
+    return {
+      n: String(p.number).padStart(2, "0"),
+      name: p.title,
+      findings,
+      level: p.band === "DEPARTS_EXPLAINED" ? 0 : Math.round(meanLevel(findings)),
+      mean: meanLevel(findings),
+      state: BAND[p.band] || "Not evidenced",
+      dots: dots(Math.round(meanLevel(findings)), p.band === "DEPARTS_EXPLAINED"),
+      stateColor: p.band === "DEPARTS_EXPLAINED" ? DEEP
+        : (meanLevel(findings) >= 3 ? INK : "#6A6F7D"),
+      mark: p.band === "DEPARTS_EXPLAINED" ? AMB : "transparent"
+    };
+  });
+
+  const tPct = res.transparencyScore && res.transparencyScore.value != null
+    ? Math.round(res.transparencyScore.value * 100) : 0;
+  const practice = res.practiceScore && res.practiceScore.value != null
+    ? res.practiceScore.value : 0;
+  const conf = res.confidence || "E";
+  const gradeIdx = Math.max(0, ["A", "B", "C", "D", "E"].indexOf(conf));
+
+  const retrieval = (payload.sourceLog || []).map(d => ({
+    name: d.title,
+    loc: d.location,
+    status: d.extractionMethod === "ocr" ? "scan"
+      : (d.outcome === "RETRIEVED" ? "retrieved"
+        : d.outcome === "UNREADABLE" ? "unreadable" : "notfound"),
+    ms: d.elapsedMs || 0,
+    mode: "live fetch",
+    delay: 0
+  }));
+
+  return {
+    name: payload.company.name,
+    code: payload.company.asxCode,
+    tier: payload.company.tier || "",
+    managed: payload.company.sector || "",
+    matrix: payload.matrixVersion,
+    date: formatDate(payload.completedAt),
+    band: BAND[res.band] || "Not rated",
+    conf: declined ? "\u2014" : conf,
+    principles,
+    insufficient: declined,
+    declineReason: res.declineReason || "",
+    runId: payload.runId,
+    x: tPct,
+    y: (practice / 4) * 100,
+    xRead: declined ? "\u2014" : tPct + "%",
+    yRead: declined ? "\u2014" : practice.toFixed(1),
+    stamp: payload.matrixVersion + " \u00b7 live retrieval",
+    stats: [
+      { v: String(counts.criteriaInScope || 0), k: "Criteria in scope" },
+      { v: String(counts.findingsEvidenced || 0), k: "Findings evidenced" },
+      { v: pad(counts.notApplicable), k: "Not required" },
+      { v: pad(counts.evidenceGaps), k: "Evidence gaps" },
+      { v: (counts.sourcesRetrieved || 0) + "/" + (counts.sourcesAttempted || 0),
+        k: "Sources retrieved" }
+    ],
+    meters: [
+      { name: "Transparency", value: declined ? "\u2014" : tPct + "%",
+        cells: ramp(25, Math.round(tPct / 4)),
+        note: (res.transparencyScore && res.transparencyScore.basis) || "" },
+      { name: "Practice", value: declined ? "\u2014" : practice.toFixed(1) + " / 4",
+        cells: ramp(4, Math.round(practice)),
+        note: (res.practiceScore && res.practiceScore.basis) || "" },
+      { name: "Evidence strength", value: "Grade " + conf,
+        cells: ramp(5, 5 - gradeIdx),
+        note: "Primary documents carry grade A, secondary B, website text C. Retrieval failures and scans pull this down." }
+    ],
+    retrieval
+  };
+
+  function meanLevel(findings) {
+    const scoped = findings.filter(f => f.state !== "Not required");
+    if (!scoped.length) return 0;
+    return scoped.reduce((a, f) => a + f.level, 0) / scoped.length;
+  }
+  function pad(n) { return String(n || 0).padStart(2, "0"); }
+  function formatDate(iso) {
+    if (!iso) return today();
+    try {
+      return new Date(iso).toLocaleDateString("en-AU",
+        { day: "2-digit", month: "short", year: "numeric" });
+    } catch (e) { return today(); }
+  }
+}
+
+const src = (name, loc, status, delay, url) => ({ name, loc, status, delay, url });
+const DOCSET = code => [
+  src("Corporate governance statement 2026","asx announcement · pdf","retrieved",191),
+  src("Annual report 2026","asx announcement · pdf","retrieved",291),
+  src("Board charter",code.toLowerCase()+".com.au/governance","retrieved",136),
+  src("Audit committee charter",code.toLowerCase()+".com.au/governance","retrieved",127),
+  src("Nomination committee charter",code.toLowerCase()+".com.au/governance","retrieved",118),
+  src("Code of conduct",code.toLowerCase()+".com.au/policies","retrieved",109),
+  src("Continuous disclosure policy",code.toLowerCase()+".com.au/policies","retrieved",114),
+  src("Diversity policy","expected at /policies","notfound",173),
+  src("Anti-bribery policy","linked pdf · http 404","notfound",155),
+  src("Sustainability report 2025","image-only pdf · ocr applied","scan",409),
+  src("Notice of meeting 2025","asx announcement · pdf","retrieved",136),
+  src("AGM results 2025","asx announcement · pdf","retrieved",100),
+  src("Remuneration report 2026","within annual report pp.58–64","retrieved",118)
+];
+
+const COMPANIES = {
+  MFG: { name: "Meridian Field Group", code: "MFG", tier: "ASX 300", managed: "Internally managed", years: 12,
+    matrix: "G-4thEd v1.0", sources: DOCSET("meridianfield"), adjust: {} },
+  KRM: { name: "Kalgoorlie Ridge Minerals", code: "KRM", tier: "ASX 200", managed: "Internally managed", years: 18,
+    matrix: "G-4thEd v1.0", sources: DOCSET("kalgoorlieridge").map((s,i) => i === 8 ? Object.assign({}, s, { status: "retrieved", loc: "krm.com.au/policies" }) : s),
+    adjust: { "G1.7": [3,"Evidenced","Annual evaluation described"], "G3.4": [3,"Evidenced","Policy published 2026",[["A","Anti-bribery policy p.1"]]],
+      "G7.4": [3,"Evidenced","Climate risk disclosed under AASB S2",[["A","Sustainability rpt p.14"]]], "G8.1": [3,"Evidenced","Committee of four, majority independent",[["A","Rem charter p.1"]]],
+      "G8.2": [3,"Evidenced","Policies disclosed separately",[["A","Annual report p.60"]]], "G4.3": [3,"Evidenced","Verification process set out"] } },
+  YLT: { name: "Yarra Logistics Trust", code: "YLT", tier: "ASX All Ordinaries", managed: "Externally managed", years: 4,
+    matrix: "G-4thEd v1.0", sources: DOCSET("yarralogistics").map((s,i) => [1,3,4,6,9,11].includes(i) ? Object.assign({}, s, { status: i === 9 ? "scan" : "notfound" }) : s),
+    adjust: { "G1.1": [2,"Evidenced","Charter brief, roles only partly split"], "G2.1": [0,"Not disclosed","No nomination committee described"],
+      "G2.4": [1,"Not disclosed","Independence not assessed publicly"], "G3.3": [0,"Not retrieved","Policy page timed out"],
+      "G4.1": [2,"Evidenced","Three members, independence unclear"], "G4.3": [0,"Not disclosed","No verification process stated"],
+      "G5.2": [2,"Evidenced","Practice implied, not stated"], "G6.4": [1,"Not disclosed","Voting method not reported"], "G7.2": [1,"Not disclosed","Framework referenced only"] } },
+  TBH: { name: "Torrens Bay Holdings", code: "TBH", tier: "ASX All Ordinaries", managed: "Externally managed", years: 2,
+    matrix: "G-4thEd v1.0",
+    sources: [
+      src("Corporate governance statement 2025","asx announcement · pdf","retrieved",191),
+      src("Annual report 2025","asx announcement · pdf","retrieved",318),
+      src("Board charter","expected at /governance","notfound",173),
+      src("Constitution","expected at /governance","notfound",155),
+      src("Notice of meeting 2025","image-only pdf · ocr failed","unreadable",391)
+    ], adjust: {} }
+};
+
+const SEED_HISTORY = [
+  { name: "Meridian Field Group", code: "MFG", date: "02 Sep 2025", band: "Developing", conf: "C", matrix: "G-3rdEd v2.4" },
+  { name: "Kalgoorlie Ridge Minerals", code: "KRM", date: "11 Aug 2026", band: "Leading", conf: "A", matrix: "G-4thEd v1.0" },
+  { name: "Yarra Logistics Trust", code: "YLT", date: "05 Aug 2026", band: "Minimal", conf: "D", matrix: "G-4thEd v1.0" },
+  { name: "Torrens Bay Holdings", code: "TBH", date: "14 Aug 2026", band: "Not rated", conf: "—", matrix: "G-4thEd v1.0" },
+  { name: "Southern Cross Rail", code: "SXR", date: "29 Jul 2026", band: "Not evidenced", conf: "E", matrix: "G-3rdEd v2.4" }
+];
+const STORE = "provisionit.history.v1";
+
+function bandFor(mean) {
+  if (mean >= 3.4) return "Leading";
+  if (mean >= 2.2) return "Established";
+  if (mean >= 1.4) return "Developing";
+  if (mean >= 0.5) return "Minimal";
+  return "Not evidenced";
+}
+function today() {
+  return new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// Build the assessment from the criteria corpus + per-company adjustments + retrieval outcome.
+function assess(co, retrieval) {
+  const gotScan = retrieval.filter(r => r.status === "scan").length;
+  const missing = retrieval.filter(r => r.status !== "retrieved" && r.status !== "scan").length;
+  const retrieved = retrieval.length - missing;
+
+  let inScope = 0, disclosed = 0, levelSum = 0, gaps = 0, notReq = 0, evidenced = 0, gradePts = 0, gradeN = 0;
+  const principles = C.map(([n, name, rows]) => {
+    const findings = rows.map(([id, text, level, state, note, sources]) => {
+      const adj = co.adjust[id];
+      if (adj) { level = adj[0]; state = adj[1]; note = adj[2]; if (adj[3]) sources = adj[3]; }
+      if (state === "Not required") { notReq++; }
+      else {
+        inScope++; levelSum += level;
+        if (state === "Evidenced") { evidenced++; disclosed++; }
+        else if (state === "Departs, explained") { disclosed++; }
+        else gaps++;
+      }
+      (sources || []).forEach(s => { gradePts += { A: 4, B: 3, C: 2 }[s[0]] || 2; gradeN++; });
+      const p = PILL[state];
+      return { id, text, state, note, dots: dots(level, state === "Departs, explained"),
+        sources: (sources || []).map(s => ({ g: s[0], loc: s[1] })),
+        pillBg: p.pillBg, pillFg: p.pillFg, pillBd: p.pillBd, level };
+    });
+    const scoped = findings.filter(f => f.state !== "Not required");
+    const mean = scoped.length ? scoped.reduce((a, f) => a + f.level, 0) / scoped.length : 0;
+    const departs = scoped.length > 0 && scoped.every(f => f.state === "Departs, explained");
+    const level = departs ? 0 : Math.round(mean);
+    return { n, name, findings, level, mean,
+      state: departs ? "Departs, explained" : bandFor(mean),
+      dots: dots(level, departs),
+      stateColor: departs ? DEEP : (level >= 3 ? INK : "#6A6F7D"),
+      mark: departs ? AMB : "transparent" };
+  });
+
+  const transparency = Math.round(100 * disclosed / inScope);
+  const practice = levelSum / inScope;
+  const retrievalRatio = retrieved / retrieval.length;
+  const gradeMean = gradeN ? gradePts / gradeN : 0;
+  const gradeIdx = Math.max(0, Math.min(4, Math.round((4 - gradeMean) + (gotScan ? .4 : 0) + (1 - retrievalRatio) * 2)));
+  const conf = ["A", "B", "C", "D", "E"][gradeIdx];
+  const band = bandFor(practice);
+
+  return {
+    name: co.name, code: co.code, tier: co.tier, managed: co.managed, matrix: co.matrix, date: today(),
+    band, conf, principles, insufficient: retrievalRatio < 0.5,
+    x: transparency, y: (practice / 4) * 100, xRead: transparency + "%", yRead: practice.toFixed(1),
+    stamp: co.matrix + " · n=284 peers",
+    stats: [
+      { v: String(inScope + notReq), k: "Criteria in scope" },
+      { v: String(evidenced), k: "Findings evidenced" },
+      { v: String(notReq).padStart(2, "0"), k: "Not required" },
+      { v: String(gaps).padStart(2, "0"), k: "Evidence gaps" },
+      { v: retrieved + "/" + retrieval.length, k: "Sources retrieved" }
+    ],
+    meters: [
+      { name: "Transparency", value: transparency + "%", cells: ramp(25, Math.round(transparency / 4)),
+        note: "Share of in-scope criteria where the company published something we could locate and cite." },
+      { name: "Practice", value: practice.toFixed(1) + " / 4", cells: ramp(4, Math.round(practice)),
+        note: "Mean maturity of what the disclosures actually describe, judged against the matrix — not how much was said." },
+      { name: "Evidence strength", value: "Grade " + conf, cells: ramp(5, 5 - gradeIdx),
+        note: "Primary documents carry grade A, secondary B, website text C. Retrieval failures and scans pull this down." }
+    ],
+    retrieval
+  };
+}
+
+class Component extends DCLogic {
+  state = {
+    screen: "search", query: "", focused: false, live: false, progress: 0,
+    open: { "02": true, "08": true }, chips: { "ASX 300": true, "Internally managed": true },
+    log: [], running: false, done: false, current: null, result: null, adding: false, manualUrl: "",
+    history: SEED_HISTORY
+  };
+
+  componentDidMount() {
+    Component.mounted = this;
+    import("./scraper.js").then(m => { this._mod = m; }).catch(e => console.error("[provision] scraper load failed", e));
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) this.setState({ history: JSON.parse(raw) });
+    } catch (e) {}
+    this._onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      this.setState({ progress: max > 0 ? Math.min(100, (h.scrollTop / max) * 100) : 0 });
+    };
+    window.addEventListener("scroll", this._onScroll, { passive: true });
+    this._reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    this._io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.style.opacity = "1";
+          e.target.style.transform = "none";
+          this._io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: "0px 0px -6% 0px" });
+    this.reveal();
+  }
+
+  componentDidUpdate() { Component.mounted = this; this.reveal(); }
+
+  componentWillUnmount() {
+    if (Component.mounted === this) Component.mounted = null;
+    window.removeEventListener("scroll", this._onScroll);
+    if (this._io) this._io.disconnect();
+  }
+
+  // Hide-then-observe, so content is visible if JS or the observer never runs.
+  reveal() {
+    if (this._reduced) return;
+    document.querySelectorAll("[data-reveal='1']").forEach((el, i) => {
+      el.dataset.reveal = "2";
+      el.style.transition = "opacity .75s cubic-bezier(.22,.61,.36,1) " + Math.min(i * 60, 300) + "ms, transform .75s cubic-bezier(.22,.61,.36,1) " + Math.min(i * 60, 300) + "ms";
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.92) { el.style.opacity = "1"; el.style.transform = "none"; return; }
+      el.style.opacity = "0";
+      el.style.transform = "translateY(26px)";
+      this._io.observe(el);
+    });
+  }
+
+  go(s) { return () => { this.setState({ screen: s, focused: false }); window.scrollTo(0, 0); }; }
+
+  resolveCompany(q) {
+    const t = q.trim().toLowerCase();
+    if (!t) return COMPANIES.MFG;
+    const list = Object.values(COMPANIES);
+    return list.find(c => c.code.toLowerCase() === t)
+      || list.find(c => c.name.toLowerCase().includes(t))
+      || null;
+  }
+
+  adHoc(q) {
+    const url = /^https?:\/\//i.test(q.trim()) ? q.trim() : "https://" + q.trim().replace(/\s+/g, "");
+    let host = "site";
+    try { host = new URL(url).hostname.replace(/^www\./, ""); } catch (e) {}
+    const paths = ["", "/about", "/governance", "/policies", "/investors", "/corporate-governance"];
+    return {
+      name: host, code: host.split(".")[0].slice(0, 4).toUpperCase(), tier: "Unlisted / unverified",
+      managed: "Profile not confirmed", matrix: "G-4thEd v1.0", adjust: {},
+      sources: paths.map(p => src(host + p + " (page text)", url + p, "retrieved", 500, url + p))
+    };
+  }
+
+  // Live run against the FastAPI backend. Same screens, real documents.
+  async runViaApi(query) {
+    const id = (this._runId = (this._runId || 0) + 1);
+    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null,
+               current: { name: query, code: query.toUpperCase().slice(0, 4), sources: [] } });
+    window.scrollTo(0, 0);
+    try {
+      const api = this._api || (this._api = await import("./backend.js"));
+      const matches = await api.searchCompanies(query);
+      if (!matches.length) throw new Error('The backend does not have "' + query + '". Try BEN, BHP or COL.');
+      const co = matches[0];
+      if (this._runId !== id) return;
+      this.set({ current: { name: co.name, code: co.asxCode, sources: [] } });
+
+      const payload = await api.runAssessment(co.asxCode, p => {
+        if (this._runId !== id) return;
+        this.set({ log: api.retrievalRows(p.sourceLog) });
+      });
+      if (this._runId !== id) return;
+
+      const result = assessFromApi(payload);
+      const record = { name: result.name, code: result.code, date: result.date,
+                       matrix: result.matrix,
+                       band: result.insufficient ? "Not rated" : result.band,
+                       conf: result.conf };
+      const history = [record].concat(this.current().state.history);
+      try { localStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
+      this.set({ running: false, done: true, result, history, log: result.retrieval });
+    } catch (err) {
+      // Loud rather than silent. A demo that quietly shows seeded data while
+      // claiming to be live is worse than one that stops and says why.
+      console.error("[provision] backend run failed", err);
+      this.set({ running: false, done: false });
+      alert("Backend run failed.\n\n" + (err.message || err) +
+            "\n\nAPI base: " + (window.PROVISION_API_BASE || "http://localhost:8080"));
+    }
+  }
+
+  async run(co) {
+    const id = (this._runId = (this._runId || 0) + 1);
+    this.set({ screen: "retrieval", running: true, done: false, log: [], current: co, result: null });
+    window.scrollTo(0, 0);
+    const out = [];
+    try {
+      const mod = this._mod || (this._mod = await import("./scraper.js"));
+      for (const s of co.sources) {
+        const r = await mod.fetchSource(s, { live: this.live() });
+        if (this._runId !== id) return;
+        out.push(r);
+        this.set({ log: out.slice() });
+      }
+      if (this.live()) {
+        const hits = mod.evidencedFrom(out.map(o => o.text || ""));
+        this._liveHits = Object.keys(hits).length;
+      } else {
+        this._liveHits = null;
+      }
+    } catch (err) {
+      console.error("[provision] retrieval failed", err);
+    }
+    if (this._runId !== id) return;
+    this.finish(co, out);
+  }
+
+  // Always land somewhere: even a partial or failed retrieval produces a result.
+  finish(co, out) {
+    const sources = out.length ? out : co.sources;
+    const result = assess(co, sources);
+    if (this._liveHits != null) result.liveHits = this._liveHits;
+    const record = {
+      name: result.name, code: result.code, date: result.date, matrix: result.matrix,
+      band: result.insufficient ? "Not rated" : result.band,
+      conf: result.insufficient ? "—" : result.conf
+    };
+    const history = [record].concat(this.current().state.history);
+    try { localStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
+    this.set({ running: false, done: true, result, history });
+  }
+
+  // The DC runtime can hand rendering to a fresh logic instance mid-run; route all
+  // state writes through whichever instance is currently mounted.
+  current() { return Component.mounted || this; }
+  set(partial) { this.current().setState(partial); }
+  live() { return this.current().state.live; }
+
+  renderVals() {
+    const st = this.state, sc = st.screen;
+    const result = st.result || assess(COMPANIES.MFG, COMPANIES.MFG.sources);
+    const a = result;
+    const tab = (name, key) => ({ name, go: this.go(key), line: sc === key ? AMB : "transparent", color: sc === key ? "#F4F5F7" : "#8A8F9C" });
+
+    const q = st.query.trim().toLowerCase();
+    const chipOn = n => !!st.chips[n];
+    const matches = Object.values(COMPANIES).filter(c => {
+      if (q && !(c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))) return false;
+      if (chipOn("Listed 3+ years") && c.years < 3) return false;
+      if (chipOn("ASX 300") && !/ASX (200|300)/.test(c.tier)) return false;
+      if (chipOn("Internally managed") && c.managed !== "Internally managed") return false;
+      return true;
+    });
+
+    const statusMap = {
+      retrieved: { status: "Retrieved", dot: AMB, color: "#E7E8EC" },
+      scan: { status: "Scanned, text recovered", dot: AMB, color: "#E7E8EC" },
+      notfound: { status: "Not found on site", dot: "#565C6C", color: "#8A8F9C" },
+      blocked: { status: "Blocked by browser", dot: "#565C6C", color: "#8A8F9C" },
+      unreadable: { status: "Scan unreadable", dot: "#565C6C", color: "#8A8F9C" }
+    };
+    const log = st.log.map(s => {
+      const m = statusMap[s.status] || statusMap.notfound;
+      return { name: s.name, loc: s.url || s.loc, status: m.status, dot: m.dot, color: m.color,
+        timing: (s.ms || 0) + " ms · " + (s.bytes ? (s.bytes / 1000).toFixed(1) + " kB" : s.mode),
+        anim: "pi-fade .4s ease" };
+    });
+    const total = st.current ? st.current.sources.length : 13;
+    const retrievedN = st.log.filter(s => s.status === "retrieved" || s.status === "scan").length;
+
+    const insDocs = (st.result ? st.result.retrieval : COMPANIES.TBH.sources).map(d => {
+      const m = statusMap[d.status] || statusMap.notfound;
+      return { name: d.name, status: d.status === "scan" ? "Retrieved" : m.status.replace("Not found on site", "Not found"), color: m.color };
+    });
+
+    return {
+      progress: st.progress,
+      tabs: [tab("Search","search"), tab("Retrieval","retrieval"), tab("Assessment","assessment"),
+             tab("Insufficient","insufficient"), tab("History","history")],
+      isSearch: sc === "search", isRetrieval: sc === "retrieval", isAssessment: sc === "assessment",
+      isMobile: sc === "mobile", isInsufficient: sc === "insufficient", isHistory: sc === "history",
+      goSearch: this.go("search"), goHistory: this.go("history"),
+      peerField: this.props.showPeerField ?? true,
+
+      live: st.live
+        ? { label: "Live backend on", dot: AMB, bd: AMB, fg: AMB }
+        : { label: "Seeded demo data", dot: "#565C6C", bd: "#2E323F", fg: "#8A8F9C" },
+      toggleLive: () => this.setState(s => ({ live: !s.live })),
+
+      query: st.query,
+      onQuery: e => this.setState({ query: e.target.value, focused: true }),
+      onFocus: () => this.setState({ focused: true }),
+      onKey: e => { if (e.key === "Enter") this.assessNow(); },
+      hintCode: matches.length === 1 ? matches[0].code : (q ? String(matches.length) : ""),
+      fieldNote: st.live
+        ? "Live mode · the backend harvests and assesses this company for real"
+        : "Company name or ASX code · free public sources only",
+      field: { bd: st.focused ? "#565C6C" : "#2E323F" },
+      showSuggest: st.focused && st.query.length > 0,
+      noMatch: st.focused && st.query.length > 0 && matches.length === 0,
+      suggestions: matches.map(c => ({
+        name: c.name, meta: c.code + " · " + c.tier,
+        pick: () => { this.setState({ query: c.name, focused: false }); this.run(c); }
+      })),
+      assess: () => this.assessNow(),
+      chips: ["Listed 3+ years","ASX 300","Internally managed","Current year only"].map(name => {
+        const on = chipOn(name);
+        return { name, toggle: () => this.setState(s => ({ chips: Object.assign({}, s.chips, { [name]: !s.chips[name] }) })),
+          bg: on ? AMB : "transparent", bd: on ? AMB : "#2E323F", fg: on ? INK : "#9AA0AE" };
+      }),
+      chipCount: matches.length + " of " + Object.keys(COMPANIES).length + " stored entities match",
+
+      log,
+      run: {
+        company: st.current ? st.current.name : "—",
+        meta: (st.current ? st.current.code + " · " + st.current.tier : "") + " · " + today(),
+        stage: st.running ? "Step 2 of 3 · live source log" : (st.done ? "Retrieval complete" : "Idle"),
+        anim: st.running ? "pi-ping 1.4s ease-out infinite" : "none",
+        pct: Math.round((st.log.length / total) * 100),
+        count: retrievedN + " of " + total + " retrieved",
+        mode: st.live ? "live fetch · r.jina.ai reader" : "stored capture · replayed with timings",
+        done: st.done,
+        cta: st.result && st.result.insufficient ? "See why we declined" : "Open assessment"
+      },
+      openResult: () => this.go(st.result && st.result.insufficient ? "insufficient" : "assessment")(),
+
+      a: Object.assign({}, a, {
+        principles: a.principles.map(p => {
+          const open = (this.props.expandAll ?? false) || !!st.open[p.n];
+          return Object.assign({}, p, { open, caret: open ? "–" : "+",
+            toggle: () => this.setState(s => ({ open: Object.assign({}, s.open, { [p.n]: !s.open[p.n] }) })) });
+        })
+      }),
+      legend: [
+        { name: "Evidenced", bg: INK, bd: INK, style: "solid" },
+        { name: "Not disclosed", bg: "transparent", bd: "#9AA0AE", style: "dashed" },
+        { name: "Not required", bg: "#E7E8EC", bd: "#E7E8EC", style: "solid" },
+        { name: "Not retrieved", bg: "transparent", bd: "#8A8F9C", style: "dotted" }
+      ],
+      exportJson: () => {
+        const blob = new Blob([JSON.stringify(a, (k, v) => (typeof v === "function" ? undefined : v), 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = a.code + "-governance-" + a.date.replace(/ /g, "-") + ".json";
+        document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+      },
+      exportPdf: () => window.print(),
+      exportNote: a.liveHits != null ? a.liveHits + " criteria matched in live text" : "Reproducible from the stored capture",
+
+      ins: {
+        sentence: (st.result ? "Two of the five expected documents were reached, and rating " + st.result.name + " on what remains would not be defensible — so we have not issued a band."
+          : "Two of the five expected documents were reached, and rating Torrens Bay Holdings on what remains would not be defensible — so we have not issued a band."),
+        docs: insDocs, adding: st.adding, url: st.manualUrl
+      },
+      retry: () => this.run(st.current || COMPANIES.TBH),
+      addSource: () => this.setState(s => ({ adding: !s.adding })),
+      onManualUrl: e => this.setState({ manualUrl: e.target.value }),
+      submitManual: () => {
+        const u = st.manualUrl.trim();
+        if (!u) return;
+        const co = Object.assign({}, st.current || COMPANIES.TBH);
+        co.sources = co.sources.concat([src("Manually added source", u, "retrieved", 400, u)]);
+        this.setState({ adding: false, manualUrl: "" });
+        this.run(co);
+      },
+
+      beliefs: [
+        { n: "01", head: "Two results, not one", body: "Openness and governance quality are reported separately and never averaged. A company can disclose honestly and still govern badly." },
+        { n: "02", head: "Missing means three things", body: "Not disclosed, not applicable, or not retrievable. Each is drawn differently, because conflating them is how bad ratings happen." },
+        { n: "03", head: "We will decline to rate", body: "When coverage is too thin to defend a band, no band is issued. That refusal is a result and is stored like any other." }
+      ],
+      gridNotes: [
+        { k: "Amber asterisk", v: "Where the assessed company sits. Amber marks this company only — and, elsewhere, departures the company explained." },
+        { k: "Grey field", v: "284 ASX 300 entities assessed under the same matrix version, for position rather than ranking." },
+        { k: "Dashed guides", v: "The two axis readings that produced the point, taken straight from the findings below." },
+        { k: "No colour coding", v: "Ratings use a monochrome ink ramp. A traffic light would imply a judgement the method does not make." }
+      ],
+      history: st.history.map(h => ({
+        name: h.name, code: h.code, date: h.date, band: h.band, conf: h.conf, matrix: h.matrix,
+        bandColor: h.band === "Not rated" || h.band === "Not evidenced" ? "#9AA0AE" : (h.conf === "B" || h.band === "Established" ? AMB : (h.band === "Leading" ? INK : "#6A6F7D")),
+        confBd: h.conf === "—" ? "#E7E8EC" : "#B6BAC6", confFg: h.conf === "—" ? "#9AA0AE" : INK,
+        rowBg: h.band === "Not rated" ? "#FAFAFB" : "#fff",
+        open: () => { const co = COMPANIES[h.code]; if (co) this.run(co); else this.go("history")(); }
+      })),
+      historyCount: st.history.length + " records"
+    };
+  }
+
+  assessNow() {
+    this.setState({ focused: false });
+    // The existing live toggle is now the backend switch. Off means the seeded
+    // demo companies, on means a real run against the API.
+    if (this.live()) {
+      this.runViaApi((this.state.query || "").trim() || "BEN");
+      return;
+    }
+    const co = this.resolveCompany(this.state.query) || this.adHoc(this.state.query || "meridianfield.com.au");
+    this.run(co);
+  }
+}
+</script>
+</body>
+</html>
