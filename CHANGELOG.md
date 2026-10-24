@@ -14,6 +14,14 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   documents, disclosure requests with their items and documents, an email log and revoked
   tokens, with foreign keys. SQLite locally, PostgreSQL via DATABASE_URL. Older databases are
   imported automatically. Schema in docs/database.md (feature/auth-sign-in)
+- Interface: pillar selection and tabs, machine interpretation banner, PDF download,
+  email and request panels, Requests screen, live progress (feature/frontend-esg-
+  pillars)
+- Live mode shows only real data: History lists stored runs, the Insufficient screen
+  lists the criteria public sources did not answer, and illustrative peer dots are
+  hidden on real runs (feature/frontend-esg-pillars)
+- demo.sh starts the fixture company, API and frontend in one command; DEMO.md is the
+  showcase script (feature/frontend-esg-pillars)
 - Disclosure requests: email a company the criteria public sources did not answer, with
   a due date, secure upload link and opt-out (feature/disclosure-requests)
 - Company response page; documents provided are re-assessed and graded C; a decline or
