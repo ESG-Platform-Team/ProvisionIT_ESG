@@ -5,6 +5,8 @@
 // to the built-in demo data, which is what makes this safe to ship before the
 // backend is reliable.
 
+import { track, identify, reset } from "./analytics.js";
+
 export const API_BASE = window.PROVISION_API_BASE ?? "http://localhost:8080";
 
 export const backendEnabled = () => Boolean(API_BASE);
@@ -38,6 +40,7 @@ async function json(url, opts) {
     window.dispatchEvent(new CustomEvent("provision:signedout"));
   }
   if (!res.ok) {
+    track("api_error", { status: res.status, path: new URL(url).pathname.replace(/\/[0-9a-f-]{8,}/gi, "/:id") });
     let detail = res.statusText;
     try {
       const body = await res.json();
@@ -60,18 +63,24 @@ function post(url, body) {
 export async function signIn(email, password) {
   const out = await post(`${API_BASE}/api/auth/login`, { email, password });
   setToken(out.token);
+  identify(out.user);
+  track("signed_in");
   return out.user;
 }
 
 export async function signUp(name, email, password) {
   const out = await post(`${API_BASE}/api/auth/signup`, { name, email, password });
   setToken(out.token);
+  identify(out.user);
+  track("signed_up");
   return out.user;
 }
 
 export async function signOut() {
   try { await post(`${API_BASE}/api/auth/logout`, {}); } catch (e) {}
   setToken(null);
+  track("signed_out");
+  reset();
 }
 
 export async function me() {
@@ -91,12 +100,14 @@ export async function listCompanies() {
 // Add a private (unlisted) company by its website. Returns the stored company,
 // or the existing one if that website is already on file.
 export async function addCompany(name, website, contactEmail, sector, asxCode) {
+  track("company_added", { listed: Boolean(asxCode) });
   return post(`${API_BASE}/api/companies`, { name, website, contactEmail, sector, asxCode });
 }
 
 // Contact addresses the company publishes on its own website. Nothing is
 // guessed or stored; the analyst picks one.
 export async function findContacts(code) {
+  track("contacts_looked_up");
   return json(`${API_BASE}/api/companies/${encodeURIComponent(code)}/contacts`);
 }
 
@@ -121,9 +132,29 @@ export async function pollRun(runId, onProgress, pollAfterMs) {
 
 // Starts a run for the chosen pillars and polls until it completes.
 export async function runAssessment(asxCode, onProgress, pillars) {
-  const start = await post(`${API_BASE}/api/assessments`,
-    { asxCode, pillars: pillars && pillars.length ? pillars : ["GOVERNANCE"] });
-  return pollRun(start.runId, onProgress, start.pollAfterMs);
+  const chosen = pillars && pillars.length ? pillars : ["GOVERNANCE"];
+  const t0 = Date.now();
+  track("assessment_started", { pillars: chosen, pillarCount: chosen.length });
+  const start = await post(`${API_BASE}/api/assessments`, { asxCode, pillars: chosen });
+  try {
+    const payload = await pollRun(start.runId, onProgress, start.pollAfterMs);
+    track("assessment_completed", assessmentSummary(payload, Date.now() - t0));
+    return payload;
+  } catch (e) {
+    track("assessment_failed", { pillars: chosen, seconds: Math.round((Date.now() - t0) / 1000) });
+    throw e;
+  }
+}
+
+// Bands and counts only: enough to see whether people trust what they get,
+// nothing that identifies the company's disclosures.
+function assessmentSummary(payload, ms) {
+  const out = { seconds: Math.round(ms / 1000), runId: payload.runId };
+  (payload.pillars || []).forEach(p => {
+    const k = String(p.pillar || "").toLowerCase();
+    if (k && p.result) out[k + "_band"] = p.result.band || null;
+  });
+  return out;
 }
 
 export async function getRun(runId) {
@@ -137,6 +168,7 @@ export async function listRuns(asxCode) {
 }
 
 export async function evidenceFor(runId, criterionCode) {
+  track("evidence_opened", { runId, criterionCode });
   return json(`${API_BASE}/api/assessments/${runId}/criteria/${criterionCode}/evidence`);
 }
 
@@ -149,6 +181,7 @@ export function reportUrl(runId, download) {
 export async function openReport(runId, filename) {
   const res = await fetch(reportUrl(runId, true), withAuth());
   if (!res.ok) throw new Error(res.status === 401 ? "Sign in again to download the report" : res.statusText);
+  track("report_downloaded", { runId });
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement("a");
   a.href = url; a.download = filename || "esg-assessment.pdf";
@@ -157,10 +190,12 @@ export async function openReport(runId, filename) {
 }
 
 export async function emailReport(runId, to, message) {
+  track("report_emailed", { runId, withNote: Boolean(message) });
   return post(`${API_BASE}/api/assessments/${runId}/email`, { to, message, includeJson: true });
 }
 
 export async function createRequest(runId, contactEmail, requestedBy, pillars) {
+  track("disclosure_request_sent", { source: "assessment", runId });
   return post(`${API_BASE}/api/assessments/${runId}/disclosure-requests`,
     { contactEmail, requestedBy, pillars });
 }
@@ -175,6 +210,13 @@ export async function previewRequest(form) {
 }
 
 export async function sendRequestForm(form) {
+  track("disclosure_request_sent", {
+    source: "composer",
+    documents: (form.documents || []).length,
+    customItems: (form.custom || []).length,
+    includeGaps: Boolean(form.includeGaps),
+    dueDays: form.dueDays || null
+  });
   return post(`${API_BASE}/api/disclosure-requests`, form);
 }
 
@@ -208,10 +250,12 @@ export async function listRequests(asxCode) {
 }
 
 export async function closeRequest(requestId) {
+  track("disclosure_request_closed");
   return post(`${API_BASE}/api/disclosure-requests/${requestId}/close`, {});
 }
 
 export async function reassess(requestId, onProgress) {
+  track("reassessed_after_request");
   const start = await post(`${API_BASE}/api/disclosure-requests/${requestId}/reassess`, {});
   return pollRun(start.runId, onProgress, start.pollAfterMs);
 }

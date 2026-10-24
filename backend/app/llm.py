@@ -44,6 +44,17 @@ DEFAULT_RPM = int(os.getenv("GEMINI_RPM", "10"))
 
 CACHE_DIR = Path(os.getenv("LLM_CACHE_DIR", "data/llm_cache"))
 
+
+def replay_mode() -> bool:
+    """LLM_REPLAY=1 answers only from the cache and never calls Gemini.
+
+    The cache holds real model output, keyed by the exact prompt, so a replayed
+    run shows the same findings the model gave when the cache was filled. A
+    prompt that was never recorded falls back to keyword extraction and says so.
+    Used for the offline demo and for recording, where waiting on the API's rate
+    limit is dead air."""
+    return os.getenv("LLM_REPLAY", "").strip().lower() in ("1", "true", "yes")
+
 # Keyed by content hash plus matrix version, exactly as the DynamoDB extraction
 # cache is in the AWS design. A hit means the LLM is never called.
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -145,7 +156,7 @@ class GeminiClient:
 
     @property
     def configured(self) -> bool:
-        return bool(self.api_key)
+        return bool(self.api_key) or replay_mode()
 
     async def extract_principle(
         self, client: httpx.AsyncClient, principle: dict,
@@ -167,6 +178,9 @@ class GeminiClient:
             if cached is not None:
                 self.cache_hits += 1
                 return cached
+        if replay_mode():
+            raise RuntimeError("replay mode has no recorded answer for this text, "
+                               "using keyword extraction")
 
         payload = {
             "systemInstruction": {"parts": [{"text": SYSTEM_RULES}]},

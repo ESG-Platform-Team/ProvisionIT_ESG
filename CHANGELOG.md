@@ -6,6 +6,17 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- PostHog for user acceptance testing: page views, autocapture, session replay with inputs and
+  email addresses masked, named events for the search-to-report funnel, and in-app surveys. Off
+  until a key is set in frontend/analytics.config.js; vendored posthog-js 1.435.5; never loads on
+  the company response page. Setup in docs/analytics.md (feature/posthog-uat)
+- Fast demo modes: ./demo.sh --warm records Gemini's answers for TST, --replay serves them from
+  the cache with no API calls, --film paces the source log for screen recording
+  (feature/demo-speed)
+
+### Changed
+- No politeness pause between fetches from our own machine (localhost fixture); real websites
+  keep the 1.5 s delay, now configurable with HARVEST_HOST_DELAY (feature/demo-speed)
 - Cloudflare deployment: one Worker serves the website and forwards /api and /respond to the
   API running as a Cloudflare Container (backend/Dockerfile). Steps in DEPLOY.md
   (feature/cloudflare-deploy)

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -32,7 +33,21 @@ USER_AGENT = (
 
 # Delay between requests to the same host. Mick's sources are free and public,
 # and hammering them is both discourteous and a fast route to an IP block.
-HOST_DELAY_SECONDS = 1.5
+HOST_DELAY_SECONDS = float(os.getenv("HARVEST_HOST_DELAY", "1.5"))
+
+# The delay protects other people's servers. Our own fixture company on this
+# machine is not one of them, so the offline demo runs at full speed.
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+# Optional pause per local fetch, for recording a demo at a watchable pace.
+# Zero by default; DEMO_PACE=0.8 makes the live source log fill in over ~9 s.
+DEMO_PACE_SECONDS = float(os.getenv("DEMO_PACE", "0"))
+
+
+def is_local(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host in LOCAL_HOSTS or host.endswith(".localhost")
 
 # Link text or href fragments that suggest a governance document.
 DOC_PATTERNS = [
@@ -152,6 +167,10 @@ class Harvester:
         self.tasks: list[HarvestTask] = []
 
     async def _polite_wait(self, url: str) -> None:
+        if is_local(url):
+            if DEMO_PACE_SECONDS > 0:
+                await asyncio.sleep(DEMO_PACE_SECONDS)
+            return
         host = urlparse(url).netloc
         last = self._last_hit.get(host)
         if last is not None:

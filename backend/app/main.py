@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
-from . import auth, companies, contacts, disclosure, mailer, pillars, pipeline, report, store
+from . import auth, companies, contacts, disclosure, llm, mailer, pillars, pipeline, report, store
 from .matrix import FRAMEWORK_EDITION, MATRIX_VERSION
 
 app = FastAPI(title="Provision IT ESG Assessment", version="0.2.0")
@@ -168,7 +168,8 @@ async def health():
         "pillars": [{"pillar": k, "label": pillars.get(k)["label"],
                      "matrixVersion": pillars.get(k)["matrixVersion"],
                      "draft": pillars.get(k)["draft"]} for k in pillars.ORDER],
-        "llmConfigured": bool(os.getenv("GEMINI_API_KEY")),
+        "llmConfigured": bool(os.getenv("GEMINI_API_KEY")) or llm.replay_mode(),
+        "llmReplay": llm.replay_mode(),
         "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
         "smtpConfigured": mailer.configured(),
         "authRequired": os.getenv("AUTH_REQUIRED", "true").lower() != "false",
