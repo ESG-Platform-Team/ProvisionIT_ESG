@@ -43,7 +43,7 @@ backend/     FastAPI service: harvest, extract, read, score
 frontend/    Six screen interface, static, no build step
 cloudflare/  Worker that serves the site and runs the API as a container
 e2e/         Browser tests for the analyst journey
-scripts/     Secret scan run in CI
+scripts/     Secret scan and post-deploy smoke test
 docs/        Database schema and analytics setup
 ```
 
@@ -117,6 +117,7 @@ with no API key.
 | End to end | `e2e/journey.test.mjs` | The analyst journey in a real browser: sign up, search, retrieve, scorecard, PDF, history |
 | Static | `scripts/check_secrets.sh`, `node --check` | No committed secrets; every browser and Worker script parses |
 | Build | `backend/Dockerfile`, `cloudflare/` | The image and Worker that production runs both build |
+| Post-deploy | `scripts/smoke_test.sh` | The live site answers, sign-in is enforced, matrices are the expected versions |
 
 ```
 cd backend && for t in test_*.py; do python "$t" || exit 1; done   # 346 assertions, 13 files
@@ -133,13 +134,15 @@ setup and the event list.
 
 ## Deploying
 
-The whole platform deploys to Cloudflare from one command: the website as
-static files and the API as a Cloudflare Container, on one address, with
-PostgreSQL (for example Neon) as the database. [DEPLOY.md](DEPLOY.md) has the steps.
+Merging to `main` deploys automatically once CI passes and the release is
+approved (`.github/workflows/deploy.yml`), then the smoke test runs against the
+live site. To deploy by hand:
 
 ```
 cd cloudflare && npm install && npx wrangler deploy
 ```
+
+[DEPLOY.md](DEPLOY.md) has first-time setup, secrets and rollback.
 
 ## Contributing
 
