@@ -6,6 +6,12 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- PDF report: every pillar, quoted evidence with page numbers, source log, method notes
+  (feature/pdf-report-email)
+- Email the report with the JSON result attached; without SMTP settings every message is
+  saved to data/mail and nothing is sent (feature/pdf-report-email)
+- Report email has an HTML layout with a pillar summary table; plain text stays the
+  fallback (feature/pdf-report-email)
 - One crawl assesses any combination of Governance, Environmental and Social
   (feature/multi-pillar-pipeline)
 - Machine interpretation statement on every run and every finding, as the client asked
