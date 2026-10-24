@@ -3,7 +3,9 @@
 Run one assessment end to end and print it. This is the demo.
 
     python run_cli.py BEN
-    python run_cli.py BHP --no-llm
+    python run_cli.py BEN --pillars ALL
+    python run_cli.py BHP --no-llm --pillars ENVIRONMENTAL SOCIAL
+    python run_cli.py BEN --pdf ben.pdf
     python run_cli.py --list
 """
 
@@ -37,7 +39,10 @@ async def main() -> int:
     ap.add_argument("asx_code", nargs="?", help="ASX code, for example BEN")
     ap.add_argument("--no-llm", action="store_true",
                     help="Keyword extraction only, no Gemini calls")
-    ap.add_argument("--max-docs", type=int, default=12)
+    ap.add_argument("--max-docs", type=int, default=20)
+    ap.add_argument("--pillars", nargs="+", default=["GOVERNANCE"],
+                    help="GOVERNANCE ENVIRONMENTAL SOCIAL, or ALL")
+    ap.add_argument("--pdf", metavar="PATH", help="Also write the PDF report")
     ap.add_argument("--json", metavar="PATH", help="Also write the full result to a file")
     ap.add_argument("--list", action="store_true", help="List seeded companies")
     args = ap.parse_args()
@@ -63,15 +68,21 @@ async def main() -> int:
 
     print(f"\n{BAR}")
     print(f"  {company['name']}  ({company['asxCode']})")
-    print(f"  {'Gemini ' + os.getenv('GEMINI_MODEL', 'gemini-2.5-flash') if use_llm else 'Keyword extraction, no LLM'}")
+    print(f"  {'Gemini ' + os.getenv('GEMINI_MODEL', 'gemini-3.6-flash') if use_llm else 'Keyword extraction, no LLM'}")
     print(BAR)
 
     state = pipeline.RunState(pipeline.new_run_id(), company)
     result = await pipeline.run_assessment(
-        company, state, use_llm=use_llm, max_docs=args.max_docs
+        company, state, use_llm=use_llm, max_docs=args.max_docs,
+        pillar_keys=args.pillars,
     )
 
     _print_result(result)
+
+    if args.pdf:
+        from app import report
+        Path(args.pdf).write_bytes(report.render(result))
+        print(f"PDF report written to {args.pdf}")
 
     if args.json:
         Path(args.json).write_text(json.dumps(result, indent=2))
@@ -80,11 +91,26 @@ async def main() -> int:
 
 
 def _print_result(r: dict) -> None:
-    res = r["result"]
+    print(f"\n  {r['interpretation']['statement']}")
+    if r["interpretation"].get("note"):
+        print(f"\n  {r['interpretation']['note']}")
+    for pillar in r["pillars"]:
+        _print_pillar(pillar, r["sourceLog"])
+    print(f"\n{DASH}\n  SOURCE LOG\n{DASH}")
+    for d in r["sourceLog"]:
+        grade = f"[{d['sourceGrade']}]" if d.get("sourceGrade") else "   "
+        method = d.get("extractionMethod") or ""
+        print(f"  {d['outcome']:<11} {grade} {d['title'][:44]:<46} {method}")
+    print()
+
+
+def _print_pillar(pillar: dict, source_log: list) -> None:
+    res = pillar["result"]
     counts = res["counts"]
 
     print(f"\n{BAR}")
-    print(f"  GOVERNANCE BAND   {res['band']}        CONFIDENCE  {res['confidence']}")
+    print(f"  {pillar['label'].upper()} BAND   {res['band']}        "
+          f"CONFIDENCE  {res['confidence']}    {pillar['matrixVersion']}")
     print(BAR)
 
     if res.get("declineReason"):
@@ -101,14 +127,8 @@ def _print_result(r: dict) -> None:
     print(f"  {counts['evidenceGaps']:>3}  evidence gaps")
     print(f"  {counts['sourcesRetrieved']:>3}/{counts['sourcesAttempted']} sources retrieved")
 
-    print(f"\n{DASH}\n  SOURCE LOG\n{DASH}")
-    for d in r["sourceLog"]:
-        grade = f"[{d['sourceGrade']}]" if d.get("sourceGrade") else "   "
-        method = d.get("extractionMethod") or ""
-        print(f"  {d['outcome']:<11} {grade} {d['title'][:44]:<46} {method}")
-
     print(f"\n{DASH}\n  FINDINGS\n{DASH}")
-    for principle in r["principles"]:
+    for principle in pillar["principles"]:
         print(f"\n  {principle['number']:02d}  {principle['title']}")
         print(f"      {principle['band']}")
         for row in principle["criteria"]:
@@ -118,7 +138,6 @@ def _print_result(r: dict) -> None:
             for ev in row["evidence"]:
                 print(f"             \"{ev['excerpt'][:66]}\"")
                 print(f"              {ev['locator']}")
-    print()
 
 
 if __name__ == "__main__":
