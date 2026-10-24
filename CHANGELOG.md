@@ -6,6 +6,9 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- End-to-end browser tests for the analyst journey (e2e/, Playwright), a committed-secrets scan
+  and a syntax check of every browser and Worker script, all run in CI; README rewritten in
+  Markdown with the test layers (test/e2e-browser-tests)
 - Acceptance tests named after the user stories: 31 stories, each with its Given / When / Then,
   run end to end through the API on TST; CI keeps the per-story report (test/acceptance-tests)
 - PostHog for user acceptance testing: page views, autocapture, session replay with inputs and
