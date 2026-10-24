@@ -302,6 +302,7 @@ def _finish_row(row: dict, origin: dict, engine: str, model: str | None,
         ev["sourceGrade"] = origin.get("sourceGrade")
         ev["sourceDocumentId"] = origin.get("sourceDocumentId")
         ev["provenance"] = origin.get("provenance", "PUBLIC")
+        ev["extractedBy"] = engine
         if origin.get("title"):
             ev["locator"] = f"{origin['title'][:40]} {ev['locator']}"
     if row["maturity"] is not None and row["evidence"]:

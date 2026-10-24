@@ -105,6 +105,11 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   demo; request email links use the address the analyst is on unless PUBLIC_BASE_URL is set
   (feature/cloudflare-deploy)
 
+### Fixed
+- Evidence now records the engine that actually read it (KEYWORD or LLM). It always said LLM,
+  which was wrong on keyword runs such as a site with no Gemini key. Found by the acceptance
+  tests (test/acceptance-tests)
+
 ## [0.1.0] - 2026-09-07
 
 ### Added
