@@ -8,3 +8,6 @@ __pycache__/
 .venv/
 node_modules/
 .DS_Store
+**/data/platform.db
+**/data/mail/
+**/data/responses/
