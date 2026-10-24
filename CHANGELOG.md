@@ -6,6 +6,13 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Environmental matrix E-draft v0.1, 16 criteria, AASB S2 and GRI 300, pending review
+  (feature/esg-pillar-matrices)
+- Social matrix S-draft v0.1, 14 criteria, including data privacy and cyber security,
+  pending review (feature/esg-pillar-matrices)
+- Pillar registry; the scoring engine scores any pillar's matrix; source grades for
+  climate, modern slavery, WGEA and policy documents, and grade C for documents provided
+  on request (feature/esg-pillar-matrices)
 - Coding standards in CONTRIBUTING.md: branch naming, Conventional Commits, pull request
   expectations and peer review (docs/coding-standards)
 - Pull request template and a CI workflow that lints and runs every offline test on pull

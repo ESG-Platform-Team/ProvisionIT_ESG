@@ -22,7 +22,8 @@ returned.
 
 from __future__ import annotations
 
-from .matrix import MATURITY_LABELS, PRINCIPLES
+from .matrix import MATURITY_LABELS
+from .matrix import PRINCIPLES as GOVERNANCE_PRINCIPLES
 
 # Practice bands, applied to mean maturity across in-scope criteria.
 BAND_THRESHOLDS = [
@@ -62,6 +63,23 @@ SOURCE_GRADES = {
     "notice_of_meeting": "B",
     "agm_results": "B",
     "sustainability_report": "B",
+    # Environmental and social documents. A climate statement prepared under
+    # AASB S2 sits in the annual report and is audited or reviewed, so it grades
+    # with the annual report. The rest are company published and unaudited.
+    "climate_statement": "A",
+    "modern_slavery_statement": "B",
+    "wgea_report": "B",
+    "human_rights_policy": "B",
+    "environmental_policy": "B",
+    "supplier_code": "B",
+    "privacy_policy": "B",
+    "reconciliation_action_plan": "B",
+    "whs_policy": "B",
+    # Supplied privately by the company in answer to a disclosure request. Same
+    # author as a published policy, but it has not been published, so it is not
+    # open to the public scrutiny that publication brings. One grade lower than
+    # a published document. A decision to confirm with the client.
+    "company_response": "C",
     "webpage": "C",
 }
 
@@ -77,10 +95,14 @@ def grade_for(source_type: str, extraction_method: str) -> str:
     return base
 
 
-def score_run(findings_by_code: dict, documents: list, retrieval_failed: set[str]) -> dict:
+def score_run(findings_by_code: dict, documents: list, retrieval_failed: set[str],
+              principles: list[dict] | None = None) -> dict:
     """findings_by_code maps criterionCode to a raw finding dict from llm.py.
     retrieval_failed holds criterion codes whose expected source could not be
-    retrieved at all."""
+    retrieved at all. principles is the matrix for whichever pillar is being
+    scored, governance by default. The engine is the same for all three."""
+    if principles is None:
+        principles = GOVERNANCE_PRINCIPLES
 
     criterion_results: list[dict] = []
     principle_summaries: list[dict] = []
@@ -93,7 +115,7 @@ def score_run(findings_by_code: dict, documents: list, retrieval_failed: set[str
     gaps = 0
     not_applicable = 0
 
-    for principle in PRINCIPLES:
+    for principle in principles:
         rows = []
         for c in principle["criteria"]:
             code = c["criterionCode"]
