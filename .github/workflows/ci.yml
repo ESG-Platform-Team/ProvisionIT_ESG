@@ -36,3 +36,19 @@ jobs:
             echo "::endgroup::"
           done
           exit $status
+
+  container:
+    # The image Cloudflare runs. Building it here catches a broken Dockerfile
+    # or requirement before anyone deploys.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the API image
+        run: docker build --platform linux/amd64 -t provisionit-esg-api backend
+
+      - name: Worker bundles
+        working-directory: cloudflare
+        run: |
+          npm install --no-audit --no-fund
+          npx esbuild src/index.js --bundle --format=esm --platform=neutral --external:'cloudflare:*' --outfile=/tmp/worker.js

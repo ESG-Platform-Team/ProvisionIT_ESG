@@ -36,6 +36,7 @@ confidence letter.
 Layout
     backend/    FastAPI service: harvest, extract, read, score
     frontend/   Six screen interface, static, no build step
+    cloudflare/ Worker that serves the site and runs the API as a container
 
 Demo
     ./demo.sh --reset
@@ -80,6 +81,13 @@ Tests
 140 assertions, no network and no API key required. They cover the rules the
 client agreed to: scoring, the three pillars, the machine interpretation
 statement, the PDF, safe email, and the disclosure request lifecycle.
+
+Deploying
+The whole platform deploys to Cloudflare from one command: the website as
+static files and the API as a Cloudflare Container, on one address, with
+PostgreSQL (for example Neon) as the database. DEPLOY.md has the steps.
+
+    cd cloudflare && npm install && npx wrangler deploy
 
 Contributing
 Read CONTRIBUTING.md before opening a pull request: branch naming, commit

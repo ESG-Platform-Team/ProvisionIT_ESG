@@ -6,6 +6,15 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Cloudflare deployment: one Worker serves the website and forwards /api and /respond to the
+  API running as a Cloudflare Container (backend/Dockerfile). Steps in DEPLOY.md
+  (feature/cloudflare-deploy)
+- PostgreSQL ready: connection strings from Neon, Supabase or RDS work unchanged (psycopg 3),
+  with stale-connection checks (feature/cloudflare-deploy)
+- Files companies upload are stored in the database as well as on disk, and restored when the
+  disk copy is gone, because cloud container disks are wiped on restart
+  (feature/cloudflare-deploy)
+
 - View what a company sent back: each sent request in the Requests tab expands to show the
   documents provided (open in a new tab or download), who sent them, what was asked for and the
   timeline. Documents are served only to signed-in users and only from the responses folder
@@ -77,6 +86,11 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   requests to integration and main (docs/coding-standards)
 - backend/ruff.toml and backend/testkit.py so lint and tests are the same for everyone
   (docs/coding-standards)
+
+### Changed
+- The website finds the API on its own domain when deployed and on localhost:8080 for the local
+  demo; request email links use the address the analyst is on unless PUBLIC_BASE_URL is set
+  (feature/cloudflare-deploy)
 
 ## [0.1.0] - 2026-09-07
 

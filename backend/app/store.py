@@ -9,6 +9,7 @@ DATABASE_URL change, not a code change.
 from __future__ import annotations
 
 import datetime
+from pathlib import Path
 
 from sqlalchemy import delete, select
 
@@ -235,7 +236,11 @@ def save_request(req: dict) -> None:
         row.responded_at = _dt(req.get("respondedAt"))
         row.closed_at = _dt(req.get("closedAt"))
         row.detail = req
+        kept: dict[str, bytes] = {}
         if row in s:
+            kept = {p: c for p, c in s.execute(
+                select(db.RequestDocument.path, db.RequestDocument.content)
+                .where(db.RequestDocument.request_id == row.id)) if c}
             s.execute(delete(db.RequestItem).where(db.RequestItem.request_id == row.id))
             s.execute(delete(db.RequestDocument).where(db.RequestDocument.request_id == row.id))
             s.flush()
@@ -245,9 +250,23 @@ def save_request(req: dict) -> None:
                                     label=i.get("label") or i.get("question"), pillar=i["pillar"],
                                     status_at_request=i["status"]) for i in req["items"]]
         row.documents = [db.RequestDocument(title=d["title"][:300], path=d["path"],
-                                            media_type=d["mediaType"], bytes=d["bytes"])
+                                            media_type=d["mediaType"], bytes=d["bytes"],
+                                            content=_file_bytes(d["path"]) or kept.get(d["path"]))
                          for d in (req.get("response") or {}).get("documents", [])]
         s.add(row)
+
+
+def _file_bytes(path: str) -> bytes | None:
+    p = Path(path)
+    return p.read_bytes() if p.is_file() else None
+
+
+def request_document_content(request_id: str, path: str) -> bytes | None:
+    """The stored copy of a file a company supplied, for when the working copy
+    on disk is gone (a cloud container restarts with an empty disk)."""
+    with db.session() as s:
+        return s.scalar(select(db.RequestDocument.content).where(
+            db.RequestDocument.request_id == request_id, db.RequestDocument.path == path))
 
 
 def get_request(request_id: str) -> dict | None:

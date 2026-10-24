@@ -4,7 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-<script>window.PROVISION_API_BASE = "http://localhost:8080";</script>
+<script>
+  // Local demo (./demo.sh serves this page on 8000 or 8001): the API is on 8080.
+  // Deployed (Cloudflare): the API answers on the same domain as this page.
+  window.PROVISION_API_BASE = ["8000", "8001"].includes(location.port)
+    ? location.protocol + "//" + location.hostname + ":8080" : location.origin;
+</script>
 </head>
 <body>
 <x-dc>
@@ -1083,7 +1088,7 @@ const SEED_HISTORY = [
   { name: "Southern Cross Rail", code: "SXR", date: "29 Jul 2026", band: "Not evidenced", conf: "E", matrix: "G-3rdEd v2.4" }
 ];
 // Bump on every release so browsers never mix a new page with an old cached module.
-const BUILD = "0.6.4";
+const BUILD = "0.7.0";
 const STORE = "provisionit.history.v1";
 
 function bandFor(mean) {
