@@ -11,3 +11,4 @@ node_modules/
 **/data/platform.db
 **/data/mail/
 **/data/responses/
+**/data/.jwt_secret

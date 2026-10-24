@@ -7,6 +7,7 @@ v0.2 adds, without changing anything a v0.1 client relies on:
 - persisted runs and history
 - the PDF report, and emailing it
 - disclosure requests, and the company's response page at /respond/{token}
+- accounts: every /api route except health and sign-in needs a signed-in user
 """
 
 from __future__ import annotations
@@ -15,12 +16,12 @@ import asyncio
 import os
 import re
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
-from . import companies, disclosure, mailer, pillars, pipeline, report, store
+from . import auth, companies, disclosure, mailer, pillars, pipeline, report, store
 from .matrix import FRAMEWORK_EDITION, MATRIX_VERSION
 
 app = FastAPI(title="Provision IT ESG Assessment", version="0.2.0")
@@ -53,17 +54,70 @@ def _err(status: int, code: str, message: str):
 
 
 # --- Accounts ----------------------------------------------------------------
-# Sign-in arrives in feature/auth-sign-in. Until then every request runs as the
-# guest below, and the routes already declare the dependency sign-in will use.
 
 GUEST = {"userId": "usr_guest", "name": "Guest", "email": None}
 
 
-async def require_user() -> dict:
-    return GUEST
+def _bearer(authorization: str | None) -> str | None:
+    if authorization and authorization.lower().startswith("bearer "):
+        return authorization[7:].strip() or None
+    return None
+
+
+async def require_user(authorization: str | None = Header(default=None)) -> dict:
+    """Every /api route except health and sign-in depends on this. AUTH_REQUIRED=false
+    turns it off for local scripts, never for a deployment."""
+    if os.getenv("AUTH_REQUIRED", "true").lower() == "false":
+        return GUEST
+    user = auth.user_for_token(_bearer(authorization))
+    if user is None:
+        _err(401, "UNAUTHENTICATED", "Sign in to continue")
+    return user
 
 
 AUTH = [Depends(require_user)]
+
+
+class SignUp(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class SignIn(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/api/auth/signup", status_code=201)
+async def signup(body: SignUp):
+    try:
+        user = await asyncio.to_thread(auth.signup, body.name, body.email, body.password)
+    except auth.AuthError as exc:
+        _err(400, "SIGNUP_REJECTED", str(exc))
+    return {"token": auth.issue_token(user), "tokenType": "Bearer",
+            "expiresIn": auth.expire_minutes() * 60, "user": auth.public(user)}
+
+
+@app.post("/api/auth/login")
+async def login(body: SignIn):
+    try:
+        token, user = await asyncio.to_thread(auth.login, body.email, body.password)
+    except auth.AuthError as exc:
+        _err(401, "LOGIN_FAILED", str(exc))
+    return {"token": token, "tokenType": "Bearer", "expiresIn": auth.expire_minutes() * 60,
+            "user": auth.public(user)}
+
+
+@app.post("/api/auth/logout")
+async def logout(authorization: str | None = Header(default=None)):
+    auth.logout(_bearer(authorization))
+    return {"signedOut": True}
+
+
+@app.get("/api/auth/me")
+async def me(user: dict = Depends(require_user)):
+    return {"user": auth.public(user) if user is not GUEST else GUEST}
 
 
 def _completed(run_id: str) -> dict:
@@ -99,6 +153,7 @@ async def health():
         "llmConfigured": bool(os.getenv("GEMINI_API_KEY")),
         "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
         "smtpConfigured": mailer.configured(),
+        "authRequired": os.getenv("AUTH_REQUIRED", "true").lower() != "false",
     }
 
 
@@ -259,7 +314,9 @@ async def email_report(run_id: str, body: EmailReport, user: dict = Depends(requ
                        html=_report_email_html(run, body.message, body.includeJson, user),
                        attachments=attachments,
                        reply_to=os.getenv("SMTP_REPLY_TO") or user.get("email") or None)
-    return await mailer.send(msg, "report")
+    result = await mailer.send(msg, "report")
+    store.log_email("report", result, user.get("userId"), run_id=run_id)
+    return result
 
 
 def _report_email_html(run: dict, message: str | None, include_json: bool,
@@ -331,6 +388,10 @@ async def create_request(run_id: str, body: NewRequest, user: dict = Depends(req
     req["requestedByEmail"] = user.get("email")
     await disclosure.send(req, public_base())
     store.save_request(req)
+    store.log_email("disclosure-request", {
+        "to": req["contactEmail"], "subject": "Information request " + req["requestId"],
+        "delivered": req["delivery"]["delivered"], "record": req["delivery"]["record"]},
+        user.get("userId"), run_id=run_id, request_id=req["requestId"])
     out = disclosure.public_view(req)
     out["responseUrl"] = disclosure.response_url(req, public_base())
     return out
