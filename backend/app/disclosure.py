@@ -28,7 +28,7 @@ import secrets
 import uuid
 from pathlib import Path
 
-from . import mailer, pillars
+from . import companies, mailer, pillars
 
 DEFAULT_DUE_DAYS = int(os.getenv("DISCLOSURE_DUE_DAYS", "21"))
 RESPONSE_DIR = Path(os.getenv("RESPONSE_DIR", "data/responses"))
@@ -99,7 +99,8 @@ def create(run: dict, contact_email: str, pillar_keys: list[str] | None = None,
     return {
         "requestId": f"req_{uuid.uuid4().hex[:16]}",
         "token": secrets.token_urlsafe(24),
-        "company": {"asxCode": company["asxCode"], "name": company["name"]},
+        "company": {"asxCode": company["asxCode"], "name": company["name"],
+                    "listed": company.get("listed", True)},
         "runId": run["runId"],
         "contactEmail": contact_email.strip(),
         "requestedBy": (requested_by or "").strip()[:80] or None,
@@ -137,7 +138,7 @@ def compose(req: dict, public_base: str):
     text = f"""Dear {company['name']} team,
 
 Provision IT is preparing an assessment of the {labels} disclosures of
-{company['name']} (ASX: {company['asxCode']}) using publicly available information.
+{companies.label(company)} using publicly available information.
 For the items below we could not find a published disclosure, or could not
 retrieve the document that would contain one.
 
@@ -164,7 +165,7 @@ Provision IT Pty Ltd, Melbourne
 Sent by the Provision IT ESG platform{on_behalf}. Reference {req['requestId']}.
 """
     subject = (f"Information request: {labels} disclosures, "
-               f"{company['name']} (ASX: {company['asxCode']})")
+               f"{companies.label(company)}")
     return mailer.build(
         [req["contactEmail"]], subject, text,
         reply_to=os.getenv("SMTP_REPLY_TO") or req.get("requestedByEmail") or None,

@@ -72,7 +72,10 @@
         <label for="auth-email" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Email</label>
         <input id="auth-email" type="email" value="{{ authEmail }}" onChange="{{ onAuthEmail }}" autocomplete="email" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
         <label for="auth-password" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Password</label>
-        <input id="auth-password" type="password" value="{{ authPassword }}" onChange="{{ onAuthPassword }}" autocomplete="{{ authView.pwComplete }}" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
+        <div style="position:relative">
+          <input id="auth-password" type="{{ authView.pwType }}" value="{{ authPassword }}" onChange="{{ onAuthPassword }}" autocomplete="{{ authView.pwComplete }}" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 78px 13px 14px;outline:none">
+          <button type="button" onClick="{{ togglePw }}" aria-label="{{ authView.pwToggleAria }}" aria-pressed="{{ authView.pwShown }}" style="position:absolute;top:50%;right:8px;transform:translateY(-50%);background:transparent;border:none;color:#9AA0AE;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:8px 8px" style-hover="color:#F4BF3F">{{ authView.pwToggle }}</button>
+        </div>
         <sc-if value="{{ authView.signup }}" hint-placeholder-val="{{ false }}">
           <div style="font-size:12px;color:#6A6F7D;margin-top:8px">At least 10 characters.</div>
         </sc-if>
@@ -92,9 +95,9 @@
   <div>
     <div style="background:radial-gradient(120% 90% at 78% 0%,#20232F 0%,#0E0F14 58%);padding:104px 32px 48px;position:relative;overflow:hidden">
       <div style="max-width:960px;margin:0 auto;position:relative">
-        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Environmental · Social · Governance · ASX listed entities</div>
+        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Environmental · Social · Governance · Listed and private companies</div>
         <h1 data-reveal="1" style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(40px,6.4vw,66px);line-height:.97;letter-spacing:-.012em;text-transform:uppercase;color:#F4F5F7;margin:0 0 22px;max-width:19ch;text-wrap:pretty">Every claim, back to the page it came from</h1>
-        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an Australian listed entity, or paste a company website. We retrieve what is publicly and freely available, assess governance against the ASX Corporate Governance Council Principles and environmental and social disclosure against AASB S2 and Australian reporting regimes, and link every finding to the passage it rests on.</p>
+        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an ASX-listed company, or add a private company by its website. We retrieve what is publicly and freely available, assess governance against the ASX Corporate Governance Council Principles and environmental and social disclosure against AASB S2 and Australian reporting regimes, and link every finding to the passage it rests on.</p>
 
         <div data-reveal="1" style="max-width:780px;position:relative">
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -114,11 +117,30 @@
                 </button>
               </sc-for>
               <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
-                <div style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6E7383;line-height:1.7">No stored entity matches. Press Assess to attempt a live retrieval against this name or URL.</div>
+                <div style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6E7383;line-height:1.7">{{ noMatchText }}</div>
               </sc-if>
             </div>
           </sc-if>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin:14px 0 34px">{{ fieldNote }}</div>
+          <sc-if value="{{ add.open }}" hint-placeholder-val="{{ false }}">
+            <form onSubmit="{{ addSubmit }}" style="background:#171922;border:1px solid #2E323F;padding:22px 22px 20px;margin:-16px 0 34px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F4BF3F;margin-bottom:6px">Add a private company</div>
+              <p style="font-size:13.5px;line-height:1.6;color:#9AA0AE;margin:0 0 18px;max-width:62ch">Unlisted companies publish less, so this is where requesting documents matters most. We crawl the website you give, then you can email the contact for anything missing.</p>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
+                <div><label for="add-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Company name</label><input id="add-name" value="{{ add.name }}" onChange="{{ onAddName }}" placeholder="Acme Recycling" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-website" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Website</label><input id="add-website" value="{{ add.website }}" onChange="{{ onAddWebsite }}" placeholder="acmerecycling.com.au" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-contact" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Contact email (for requests)</label><input id="add-contact" type="email" value="{{ add.contact }}" onChange="{{ onAddContact }}" placeholder="sustainability@acme.com.au" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-sector" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Sector (optional)</label><input id="add-sector" value="{{ add.sector }}" onChange="{{ onAddSector }}" placeholder="Industrials" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+              </div>
+              <sc-if value="{{ add.hasError }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="border-left:3px solid #E5484D;background:rgba(229,72,77,.08);color:#F4C7C8;font-size:13px;padding:10px 12px;margin-top:14px">{{ add.error }}</div>
+              </sc-if>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+                <button type="submit" style="background:#F4BF3F;border:none;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ add.btnOpacity }}">{{ add.button }}</button>
+                <button type="button" onClick="{{ addCancel }}" style="background:transparent;border:1px solid #2E323F;color:#9AA0AE;padding:13px 20px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase" style-hover="color:#F4F5F7">Cancel</button>
+              </div>
+            </form>
+          </sc-if>
         </div>
 
         <sc-if value="{{ live.on }}" hint-placeholder-val="{{ true }}">
@@ -132,6 +154,19 @@
         </div>
         </sc-if>
 
+        <sc-if value="{{ live.on }}" hint-placeholder-val="{{ true }}">
+        <div data-reveal="1">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Companies on file · {{ onFileCount }}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{ onFile }}" as="c" hint-placeholder-count="6">
+              <button onClick="{{ c.pick }}" title="{{ c.title }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px solid {{ c.bd }};color:#C6CAD4;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4F5F7">{{ c.label }}</button>
+            </sc-for>
+            <button onClick="{{ addOpen }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px dashed #565C6C;color:#F4BF3F;transition:all .2s" style-hover="border-color:#F4BF3F">+ Add a private company</button>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ notLive }}" hint-placeholder-val="{{ false }}">
         <div data-reveal="1">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Narrow the profile · {{ chipCount }}</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -140,6 +175,7 @@
             </sc-for>
           </div>
         </div>
+        </sc-if>
       </div>
     </div>
 
@@ -230,7 +266,7 @@
         <div>
           <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(34px,5vw,52px);line-height:.98;letter-spacing:-.005em;text-transform:uppercase;color:#F4F5F7;margin:0 0 16px">{{ a.name }}</h1>
           <div style="display:flex;gap:20px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
-            <span>ASX: {{ a.code }}</span><span style="color:#3A3F4E">/</span><span>{{ a.tier }}</span><span style="color:#3A3F4E">/</span><span>{{ a.managed }}</span><span style="color:#3A3F4E">/</span><span>Assessed {{ a.date }}</span><span style="color:#3A3F4E">/</span><span>{{ a.matrix }}</span>
+            <sc-for list="{{ a.metaParts }}" as="m" hint-placeholder-count="5"><span style="color:#3A3F4E;display:{{ m.sepShow }}">/</span><span>{{ m.text }}</span></sc-for>
           </div>
         </div>
         <div style="text-align:right">
@@ -777,6 +813,7 @@ function assessFromApi(payload, pillarKey) {
     code: payload.company.asxCode,
     tier: payload.company.tier || "",
     managed: payload.company.sector || "",
+    listed: payload.company.listed !== false,
     contactEmail: payload.company.contactEmail || "",
     pillar: pillar.pillar,
     bandLabel: (pillar.label || "Governance") + " band",
@@ -901,6 +938,8 @@ const SEED_HISTORY = [
   { name: "Torrens Bay Holdings", code: "TBH", date: "14 Aug 2026", band: "Not rated", conf: "—", matrix: "G-4thEd v1.0" },
   { name: "Southern Cross Rail", code: "SXR", date: "29 Jul 2026", band: "Not evidenced", conf: "E", matrix: "G-3rdEd v2.4" }
 ];
+// Bump on every release so browsers never mix a new page with an old cached module.
+const BUILD = "0.5.0";
 const STORE = "provisionit.history.v1";
 
 function bandFor(mean) {
@@ -999,7 +1038,9 @@ class Component extends DCLogic {
     mailOpen: false, mailTo: "", mailMsg: "", mailStatus: "",
     reqOpen: false, reqEmail: "", reqBy: "", reqStatus: "", reqLink: "",
     requests: [], requestsNote: "", liveHistory: [],
-    user: null, authMode: "signin", authName: "", authEmail: "", authPassword: "", authError: "", authBusy: false
+    user: null, authMode: "signin", authName: "", authEmail: "", authPassword: "", authError: "", authBusy: false, pwShown: false,
+    liveCompanies: [], addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "",
+    addError: "", addBusy: false
   };
 
   componentDidMount() {
@@ -1007,7 +1048,7 @@ class Component extends DCLogic {
     this._onSignedOut = () => this.set({ user: null, screen: "signin", authError: "Your session ended. Sign in again." });
     window.addEventListener("provision:signedout", this._onSignedOut);
     if (this.state.live) this.checkAuth();
-    import("./scraper.js").then(m => { this._mod = m; }).catch(e => console.error("[provision] scraper load failed", e));
+    import("./scraper.js?v=" + BUILD).then(m => { this._mod = m; }).catch(e => console.error("[provision] scraper load failed", e));
     try {
       const raw = localStorage.getItem(STORE);
       if (raw) this.setState({ history: JSON.parse(raw) });
@@ -1095,7 +1136,7 @@ class Component extends DCLogic {
 
   // Live run against the FastAPI backend. Same screens, real documents.
   async api() {
-    return this._api || (this._api = await import("./backend.js"));
+    return this._api || (this._api = await import("./backend.js?v=" + BUILD));
   }
 
   selectedPillars() {
@@ -1127,7 +1168,13 @@ class Component extends DCLogic {
     try {
       const api = await this.api();
       const matches = await api.searchCompanies(query);
-      if (!matches.length) throw new Error('The backend does not have "' + query + '". Try BEN, BHP or COL.');
+      if (!matches.length) {
+        const looksLikeSite = /^https?:\/\//i.test(query) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(query);
+        this.set({ screen: "search", running: false, addOpen: true, addError: "",
+                   addName: looksLikeSite ? "" : query, addWebsite: looksLikeSite ? query : "",
+                   searchNote: '"' + query + '" is not on file yet. Add it below as a private company.' });
+        return;
+      }
       const co = matches[0];
       if (this._runId !== id) return;
       this.set({ current: { name: co.name, code: co.asxCode, tier: co.tier || co.sector || "", sources: [] } });
@@ -1159,7 +1206,7 @@ class Component extends DCLogic {
     window.scrollTo(0, 0);
     const out = [];
     try {
-      const mod = this._mod || (this._mod = await import("./scraper.js"));
+      const mod = this._mod || (this._mod = await import("./scraper.js?v=" + BUILD));
       for (const s of co.sources) {
         const r = await mod.fetchSource(s, { live: this.live() });
         if (this._runId !== id) return;
@@ -1270,7 +1317,10 @@ class Component extends DCLogic {
     try {
       const api = await this.api();
       const user = await api.me();
-      if (user) this.set({ user, screen: this.current().state.screen === "signin" ? "search" : this.current().state.screen });
+      if (user) {
+        this.set({ user, screen: this.current().state.screen === "signin" ? "search" : this.current().state.screen });
+        this.loadCompanies();
+      }
       else this.set({ user: null, screen: "signin" });
     } catch (e) {
       this.set({ user: null, screen: "signin" });
@@ -1286,7 +1336,8 @@ class Component extends DCLogic {
       const user = st.authMode === "signup"
         ? await api.signUp(st.authName, st.authEmail, st.authPassword)
         : await api.signIn(st.authEmail, st.authPassword);
-      this.set({ user, authPassword: "", authBusy: false, screen: "search" });
+      this.set({ user, authPassword: "", authBusy: false, pwShown: false, screen: "search" });
+      this.loadCompanies();
     } catch (err) {
       this.set({ authBusy: false, authError: (err && err.message) || "Could not sign in" });
     }
@@ -1299,6 +1350,32 @@ class Component extends DCLogic {
                screen: "signin", authPassword: "", authError: "" });
   }
 
+  async loadCompanies() {
+    try {
+      const api = await this.api();
+      this.set({ liveCompanies: await api.listCompanies() });
+    } catch (err) {
+      console.error("[provision] company list failed", err);
+    }
+  }
+
+  async submitAddCompany() {
+    const st = this.current().state;
+    if (st.addBusy) return;
+    if (!st.addWebsite.trim()) { this.set({ addError: "Enter the company website." }); return; }
+    this.set({ addBusy: true, addError: "" });
+    try {
+      const api = await this.api();
+      const co = await api.addCompany(st.addName, st.addWebsite, st.addContact, st.addSector);
+      this.set({ addBusy: false, addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "",
+                 query: co.name, searchNote: "" });
+      await this.loadCompanies();
+      this.runViaApi(co.asxCode);
+    } catch (err) {
+      this.set({ addBusy: false, addError: (err && err.message) || "Could not add the company" });
+    }
+  }
+
   async loadHistory() {
     if (!this.live()) return;
     try {
@@ -1306,7 +1383,7 @@ class Component extends DCLogic {
       const runs = await api.listRuns();
       const title = b => (b || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
       this.set({ liveHistory: runs.map(r => ({
-        runId: r.runId, name: r.company.name, code: r.company.asxCode,
+        runId: r.runId, name: r.company.name, code: r.company.asxCode + (r.requestedBy ? " · run by " + r.requestedBy : ""),
         date: (r.completedAt || "").slice(0, 10),
         band: r.pillars.map(p => p.pillar[0] + " " + title(p.band)).join(" · "),
         conf: (r.pillars[0] && r.pillars[0].confidence) || "\u2014",
@@ -1382,6 +1459,9 @@ class Component extends DCLogic {
 
     const q = st.query.trim().toLowerCase();
     const chipOn = n => !!st.chips[n];
+    const liveMatches = (st.liveCompanies || []).filter(c => !q ||
+      c.name.toLowerCase().includes(q) || c.asxCode.toLowerCase().includes(q) ||
+      (c.website || "").toLowerCase().includes(q));
     const matches = Object.values(COMPANIES).filter(c => {
       if (q && !(c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))) return false;
       if (chipOn("Listed 3+ years") && c.years < 3) return false;
@@ -1429,15 +1509,18 @@ class Component extends DCLogic {
       onAuthPassword: e => this.setState({ authPassword: e.target.value }),
       authSubmit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitAuth(); },
       authSwitch: () => this.setState(s => ({ authMode: s.authMode === "signup" ? "signin" : "signup", authError: "" })),
+      togglePw: () => this.setState(s => ({ pwShown: !s.pwShown })),
       authView: st.authMode === "signup"
         ? { signup: true, kicker: "Provision IT · ESG platform", title: "Create account",
             lede: "For Provision IT analysts and the project team. Your name goes on every report you email and every request you send.",
             button: st.authBusy ? "Creating account…" : "Create account", switchLabel: "Already have an account? Sign in",
-            pwComplete: "new-password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 }
+            pwComplete: "new-password", pwType: st.pwShown ? "text" : "password", pwShown: st.pwShown ? "true" : "false",
+            pwToggle: st.pwShown ? "Hide" : "Show", pwToggleAria: st.pwShown ? "Hide password" : "Show password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 }
         : { signup: false, kicker: "Provision IT · ESG platform", title: "Sign in",
             lede: "Sign in to run assessments, email reports and request missing disclosures from companies.",
             button: st.authBusy ? "Signing in…" : "Sign in", switchLabel: "New here? Create an account",
-            pwComplete: "current-password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 },
+            pwComplete: "current-password", pwType: st.pwShown ? "text" : "password", pwShown: st.pwShown ? "true" : "false",
+            pwToggle: st.pwShown ? "Hide" : "Show", pwToggleAria: st.pwShown ? "Hide password" : "Show password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 },
       goSearch: this.go("search"), goHistory: () => { this.go("history")(); this.loadHistory(); },
       goRequests: () => { this.go("requests")(); this.loadRequests(); },
       peerField: st.payload ? false : (this.props.showPeerField ?? true),
@@ -1465,14 +1548,38 @@ class Component extends DCLogic {
       onQuery: e => this.setState({ query: e.target.value, focused: true }),
       onFocus: () => this.setState({ focused: true }),
       onKey: e => { if (e.key === "Enter") this.assessNow(); },
-      hintCode: matches.length === 1 ? matches[0].code : (q ? String(matches.length) : ""),
+      hintCode: st.live ? (liveMatches.length === 1 && q ? liveMatches[0].asxCode : "")
+        : (matches.length === 1 ? matches[0].code : (q ? String(matches.length) : "")),
       fieldNote: st.live
         ? (st.searchNote || "Live mode · the backend harvests and assesses this company for real")
         : "Company name or ASX code · free public sources only",
       field: { bd: st.focused ? "#565C6C" : "#2E323F" },
       showSuggest: st.focused && st.query.length > 0,
-      noMatch: st.focused && st.query.length > 0 && matches.length === 0,
-      suggestions: matches.map(c => ({
+      noMatch: st.focused && st.query.length > 0 && (st.live ? liveMatches.length === 0 : matches.length === 0),
+      noMatchText: st.live ? "Not on file. Press Assess to add it as a private company."
+        : "No stored entity matches. Press Assess to attempt a live retrieval against this name or URL.",
+      notLive: !st.live,
+      onFile: (st.liveCompanies || []).map(c => ({
+        label: c.listed === false ? c.name + " · private" : c.asxCode,
+        title: c.name + (c.website ? " · " + c.website : ""),
+        bd: c.listed === false ? "#565C6C" : "#2E323F",
+        pick: () => { this.setState({ query: c.name, focused: false }); this.runViaApi(c.asxCode); }
+      })),
+      onFileCount: (st.liveCompanies || []).length + " · " + (st.liveCompanies || []).filter(c => c.listed === false).length + " private",
+      addOpen: () => this.setState({ addOpen: true, addError: "" }),
+      addCancel: () => this.setState({ addOpen: false, addError: "", searchNote: "" }),
+      addSubmit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitAddCompany(); },
+      onAddName: e => this.setState({ addName: e.target.value }),
+      onAddWebsite: e => this.setState({ addWebsite: e.target.value }),
+      onAddContact: e => this.setState({ addContact: e.target.value }),
+      onAddSector: e => this.setState({ addSector: e.target.value }),
+      add: { open: !!(st.live && st.addOpen), name: st.addName, website: st.addWebsite, contact: st.addContact,
+             sector: st.addSector, error: st.addError, hasError: !!st.addError,
+             button: st.addBusy ? "Adding…" : "Add and assess", btnOpacity: st.addBusy ? .6 : 1 },
+      suggestions: st.live ? liveMatches.map(c => ({
+        name: c.name, meta: c.asxCode + " · " + (c.listed === false ? "Private" : (c.tier || "")),
+        pick: () => { this.setState({ query: c.name, focused: false }); this.runViaApi(c.asxCode); }
+      })) : matches.map(c => ({
         name: c.name, meta: c.code + " · " + c.tier,
         pick: () => { this.setState({ query: c.name, focused: false }); this.run(c); }
       })),
@@ -1500,6 +1607,9 @@ class Component extends DCLogic {
       openResult: () => this.go((st.payload ? a.allDeclined : (st.result && st.result.insufficient)) ? "insufficient" : "assessment")(),
 
       a: Object.assign({}, a, {
+        metaParts: [a.listed === false ? "Private company" : "ASX: " + a.code,
+                    a.listed === false ? "" : a.tier, a.managed, "Assessed " + a.date, a.matrix]
+          .filter(Boolean).map((text, i) => ({ text, sepShow: i ? "inline" : "none" })),
         pillarTabs: (a.pillarTabs || []).map(t => {
           const on = t.key === (st.payload ? st.pillarView : "GOVERNANCE");
           return Object.assign({}, t, {

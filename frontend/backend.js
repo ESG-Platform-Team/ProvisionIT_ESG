@@ -83,6 +83,17 @@ export async function health() {
   return json(`${API_BASE}/api/health`);
 }
 
+export async function listCompanies() {
+  const data = await json(`${API_BASE}/api/companies?all=true`);
+  return data.matches || [];
+}
+
+// Add a private (unlisted) company by its website. Returns the stored company,
+// or the existing one if that website is already on file.
+export async function addCompany(name, website, contactEmail, sector) {
+  return post(`${API_BASE}/api/companies`, { name, website, contactEmail, sector });
+}
+
 export async function searchCompanies(query) {
   const data = await json(`${API_BASE}/api/companies?q=${encodeURIComponent(query)}`);
   return data.matches || [];

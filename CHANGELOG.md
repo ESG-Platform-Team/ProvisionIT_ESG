@@ -6,6 +6,10 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Private companies: add any company by website and contact email; it is stored, appears in
+  search and the companies-on-file list, is assessed the same way, and is labelled as a private
+  company (not an ASX code) in reports and request emails (feature/private-companies)
+- Show / hide password on the sign-in form (feature/auth-sign-in)
 - Sign in with JWT: HS256 tokens with issuer, audience, expiry and a unique id, revoked on
   sign-out; salted PBKDF2 password hashes; every API route except health and sign-in needs a
   token; reports and requests record who sent them and replies go to that person
