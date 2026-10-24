@@ -57,6 +57,39 @@ def _parse(ts: str | None) -> datetime.datetime | None:
     return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
 
 
+# The ESG documents an analyst can ask a company for. Grouped by pillar so the
+# email and the response page read like a checklist. Keys are stable; labels
+# are what the company sees.
+DOCUMENT_CATALOGUE = [
+    ("GOVERNANCE", "governance_statement", "Corporate governance statement and Appendix 4G"),
+    ("GOVERNANCE", "board_charter", "Board charter and committee charters"),
+    ("GOVERNANCE", "code_of_conduct", "Code of conduct"),
+    ("GOVERNANCE", "whistleblower_policy", "Whistleblower policy"),
+    ("GOVERNANCE", "risk_framework", "Risk management framework, including climate and ESG risk"),
+    ("GOVERNANCE", "remuneration_report", "Remuneration report, including any ESG-linked targets"),
+    ("ENVIRONMENTAL", "climate_disclosure", "Climate-related financial disclosure (AASB S2 or TCFD)"),
+    ("ENVIRONMENTAL", "emissions_inventory", "Scope 1, 2 and 3 greenhouse gas emissions inventory"),
+    ("ENVIRONMENTAL", "transition_plan", "Emissions reduction targets and climate transition plan"),
+    ("ENVIRONMENTAL", "environmental_policy", "Environmental policy"),
+    ("ENVIRONMENTAL", "energy_water_waste", "Energy, water and waste data for the latest year"),
+    ("ENVIRONMENTAL", "nature_biodiversity", "Biodiversity and land use impacts and how they are managed"),
+    ("SOCIAL", "modern_slavery_statement", "Modern slavery statement"),
+    ("SOCIAL", "wgea_report", "Workplace Gender Equality Agency report or gender pay gap data"),
+    ("SOCIAL", "whs_data", "Work health and safety policy and injury rates (for example LTIFR)"),
+    ("SOCIAL", "human_rights_policy", "Human rights policy"),
+    ("SOCIAL", "supplier_code", "Supplier code of conduct and supply chain due diligence"),
+    ("SOCIAL", "reconciliation_action_plan", "Reconciliation Action Plan"),
+    ("SOCIAL", "privacy_policy", "Privacy policy and data breach response plan"),
+    ("SOCIAL", "cyber_security", "Cyber security policy or certification (for example ISO 27001)"),
+]
+_CATALOGUE = {k: (p, label) for p, k, label in DOCUMENT_CATALOGUE}
+
+
+def catalogue() -> list[dict]:
+    return [{"key": k, "pillar": p, "pillarLabel": pillars.get(p)["label"], "label": label}
+            for p, k, label in DOCUMENT_CATALOGUE]
+
+
 def requestable_items(run: dict, pillar_keys: list[str] | None = None) -> list[dict]:
     """Criteria the public sources did not answer, across the chosen pillars."""
     wanted = set(pillars.normalise(pillar_keys)) if pillar_keys else None
@@ -67,20 +100,51 @@ def requestable_items(run: dict, pillar_keys: list[str] | None = None) -> list[d
         for principle in p["principles"]:
             for row in principle["criteria"]:
                 if row["status"] in REQUESTABLE:
-                    items.append({"criterionCode": row["criterionCode"], "pillar": p["pillar"],
-                                  "pillarLabel": p["label"], "question": row["question"],
+                    items.append({"kind": "criterion", "criterionCode": row["criterionCode"],
+                                  "pillar": p["pillar"], "pillarLabel": p["label"],
+                                  "question": row["question"], "label": row["question"],
                                   "status": row["status"]})
     return items
 
 
-def create(run: dict, contact_email: str, pillar_keys: list[str] | None = None,
+def build_items(run: dict | None, documents: list[str] | None = None,
+                custom: list[str] | None = None, include_gaps: bool = True,
+                pillar_keys: list[str] | None = None) -> list[dict]:
+    """Everything a request asks for: chosen documents from the catalogue, the
+    criteria a run could not answer, and anything the analyst wrote in."""
+    items = []
+    for key in documents or []:
+        if key not in _CATALOGUE:
+            raise RequestError(f"Unknown document type {key}")
+        pillar, label = _CATALOGUE[key]
+        items.append({"kind": "document", "criterionCode": key, "pillar": pillar,
+                      "pillarLabel": pillars.get(pillar)["label"], "label": label,
+                      "question": label, "status": "REQUESTED"})
+    if run and include_gaps:
+        items += requestable_items(run, pillar_keys)
+    for i, text in enumerate(t.strip() for t in custom or [] if t and t.strip()):
+        items.append({"kind": "custom", "criterionCode": f"custom-{i + 1}", "pillar": "OTHER",
+                      "pillarLabel": "Other", "label": text[:300], "question": text[:300],
+                      "status": "REQUESTED"})
+    return items
+
+
+def create(run: dict | None, contact_email: str, pillar_keys: list[str] | None = None,
            due_days: int | None = None, requested_by: str | None = None,
-           existing: list[dict] | None = None) -> dict:
-    """Build a request from a completed run. Raises RequestError when there is
+           existing: list[dict] | None = None, *, company: dict | None = None,
+           documents: list[str] | None = None, custom: list[str] | None = None,
+           include_gaps: bool = True, contact_name: str | None = None,
+           message: str | None = None, requested_by_email: str | None = None) -> dict:
+    """Build a request. From an assessment it asks about the criteria public
+    sources did not answer; from the request form it can also (or instead) ask
+    for chosen documents and free-text items. Raises RequestError when there is
     nothing to ask for, the address is invalid, the company has opted out, or a
     request is already open."""
     if not mailer.valid_address(contact_email or ""):
         raise RequestError("A valid company contact email is required")
+    company = company or (run or {}).get("company")
+    if not company:
+        raise RequestError("Choose the company to send the request to")
     existing = [refresh(r) for r in (existing or [])]
     if any(r.get("optOut") for r in existing):
         raise RequestError("This company has asked not to receive further requests")
@@ -88,25 +152,30 @@ def create(run: dict, contact_email: str, pillar_keys: list[str] | None = None,
     if open_:
         raise RequestError(f"Request {open_[0]['requestId']} is still open for this company")
 
-    items = requestable_items(run, pillar_keys)
+    items = build_items(run, documents, custom, include_gaps, pillar_keys)
     if not items:
-        raise RequestError("Every criterion in scope was answered from public sources; "
+        raise RequestError("Choose at least one document or item to request" if not run else
+                           "Every criterion in scope was answered from public sources; "
                            "there is nothing to request")
 
     due = max(3, min(60, due_days or DEFAULT_DUE_DAYS))
     created = _now()
-    company = run["company"]
+    found = {i["pillar"] for i in items if i["pillar"] in pillars.ORDER}
     return {
         "requestId": f"req_{uuid.uuid4().hex[:16]}",
         "token": secrets.token_urlsafe(24),
         "company": {"asxCode": company["asxCode"], "name": company["name"],
                     "listed": company.get("listed", True)},
-        "runId": run["runId"],
+        "runId": (run or {}).get("runId"),
         "contactEmail": contact_email.strip(),
+        "contactName": (contact_name or "").strip()[:120] or None,
+        "message": (message or "").strip()[:2000] or None,
         "requestedBy": (requested_by or "").strip()[:80] or None,
-        "pillars": sorted({i["pillar"] for i in items}, key=pillars.ORDER.index),
+        "requestedByEmail": requested_by_email,
+        "pillars": sorted(found, key=pillars.ORDER.index) or list(pillars.ORDER),
         "items": items,
-        "criteria": [i["criterionCode"] for i in items],
+        "criteria": [i["criterionCode"] for i in items if i.get("kind", "criterion") == "criterion"],
+        "documents": [i["criterionCode"] for i in items if i.get("kind") == "document"],
         "status": "SENT",
         "createdAt": _iso(created),
         "sentAt": _iso(created),
@@ -128,46 +197,118 @@ def response_url(req: dict, public_base: str) -> str:
     return f"{public_base.rstrip('/')}/respond/{req['token']}"
 
 
-def compose(req: dict, public_base: str):
+def _long_date(iso: str) -> str:
+    d = _parse(iso)
+    return f"{d.day} {d.strftime('%B %Y')}" if d else ""
+
+
+def _grouped(items: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Items in reading order: documents and written items by pillar, then the
+    assessment criteria, then anything else."""
+    groups: list[tuple[str, list[dict]]] = []
+    for key in pillars.ORDER:
+        docs = [i for i in items if i["pillar"] == key and i.get("kind") == "document"]
+        if docs:
+            groups.append((pillars.get(key)["label"], docs))
+    crit = [i for i in items if i.get("kind", "criterion") == "criterion"]
+    if crit:
+        groups.append(("From our assessment: criteria public sources did not answer", crit))
+    other = [i for i in items if i.get("kind") == "custom"]
+    if other:
+        groups.append(("Also requested", other))
+    return groups
+
+
+def email_parts(req: dict, public_base: str) -> dict:
+    """The request email, as subject, plain text and HTML. Used for the real
+    send and for the live preview in the request form, so what the analyst
+    sees is exactly what the company receives."""
     company = req["company"]
-    due = req["dueAt"][:10]
+    who = companies.label(company)
+    due = _long_date(req["dueAt"])
     link = response_url(req, public_base)
-    labels = _labels(req["pillars"])
-    lines = "\n".join(f"  {i['criterionCode']:<6} {i['question']}" for i in req["items"])
-    on_behalf = f" on behalf of {req['requestedBy']}" if req.get("requestedBy") else ""
-    text = f"""Dear {company['name']} team,
+    scope = _labels(req["pillars"])
+    greeting = f"Dear {req['contactName']}," if req.get("contactName") else f"Dear {company['name']} team,"
+    sender = req.get("requestedBy") or "The Provision IT ESG team"
+    sender_email = req.get("requestedByEmail") or ""
 
-Provision IT is preparing an assessment of the {labels} disclosures of
-{companies.label(company)} using publicly available information.
-For the items below we could not find a published disclosure, or could not
-retrieve the document that would contain one.
+    lines = []
+    for title, group in _grouped(req["items"]):
+        lines.append(f"{title}")
+        for i in group:
+            code = f"{i['criterionCode']}  " if i.get("kind", "criterion") == "criterion" else ""
+            lines.append(f"  - {code}{i.get('label') or i['question']}")
+        lines.append("")
+    checklist = "\n".join(lines).rstrip()
+    note = f"{req['message']}\n\n" if req.get("message") else ""
 
-If you are able to help, please share any relevant document, or tell us where it
-is published, by {due}:
+    text = f"""{greeting}
 
-{lines}
+{note}Provision IT is preparing an ESG assessment of {who}, covering its {scope} disclosures. We start from publicly available information. For the items below we could not find a published version, and we would be grateful if you could share them, or tell us where they are published, by {due}.
 
-Respond securely, or decline, at:
+{checklist}
+
+Upload documents securely, or decline, at:
 {link}
 
-How your response is used
-- Anything you provide is recorded as "provided on request", graded separately
-  from published documents, and used only for this assessment.
-- If we have not heard from you by {due}, these items are reported as
-  insufficient information. That describes the information available to us; it
-  is not a finding against the company.
-- You are welcome to reply to this email with any questions.
+How your information is used
+- Anything you provide is recorded as "provided on request", kept separate from published documents, and used only for this assessment.
+- If we have not heard from you by {due}, these items are reported as insufficient information. That describes the information available to us; it is not a finding against {company['name']}.
+- Reply to this email with any questions. It comes straight to me.
 
-If you would prefer not to receive requests like this, choose "decline" at the
-link above and tick "no further requests", and we will not contact you again.
+If you would prefer not to receive requests like this, choose "decline" at the link above and tick "no further requests", and we will not contact you again.
 
-Provision IT Pty Ltd, Melbourne
-Sent by the Provision IT ESG platform{on_behalf}. Reference {req['requestId']}.
+Kind regards,
+{sender}
+{sender_email + chr(10) if sender_email else ""}Provision IT Pty Ltd, Melbourne
+Reference {req['requestId']}
 """
-    subject = (f"Information request: {labels} disclosures, "
-               f"{companies.label(company)}")
+    subject = f"ESG information request for {who}, by {due}"
+
+    e = html.escape
+    blocks = "".join(
+        f'<p style="margin:18px 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;'
+        f'color:#8A6A12;font-weight:700">{e(title)}</p><ul style="margin:0;padding-left:20px">'
+        + "".join(f'<li style="margin:4px 0;line-height:1.5">'
+                  + (f'<code style="color:#8A8F9C">{e(i["criterionCode"])}</code> '
+                     if i.get("kind", "criterion") == "criterion" else "")
+                  + f'{e(i.get("label") or i["question"])}</li>' for i in group)
+        + "</ul>" for title, group in _grouped(req["items"]))
+    note_html = (f'<p style="margin:0 0 14px;line-height:1.6">{e(req["message"])}</p>'
+                 if req.get("message") else "")
+    html_body = f"""<!doctype html><html><body style="margin:0;background:#F4F5F7;
+font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0E0F14">
+<div style="max-width:640px;margin:0 auto;background:#fff">
+<div style="background:#0E0F14;border-top:4px solid #F4BF3F;padding:18px 24px;color:#F4F5F7;
+font-weight:700">Provision IT &middot; ESG information request</div>
+<div style="padding:24px;font-size:14.5px">
+<p style="margin:0 0 14px">{e(greeting)}</p>{note_html}
+<p style="margin:0 0 6px;line-height:1.6">Provision IT is preparing an ESG assessment of
+<b>{e(who)}</b>, covering its {e(scope)} disclosures. We start from publicly available information.
+For the items below we could not find a published version, and we would be grateful if you could
+share them, or tell us where they are published, by <b>{e(due)}</b>.</p>
+{blocks}
+<p style="margin:24px 0"><a href="{e(link)}" style="background:#F4BF3F;color:#0E0F14;padding:12px 20px;
+text-decoration:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:12px">
+Upload documents or decline</a></p>
+<div style="background:#FDF3D8;border-left:3px solid #F4BF3F;padding:12px 16px;font-size:13px;line-height:1.6">
+Anything you provide is recorded as <i>provided on request</i>, kept separate from published documents,
+and used only for this assessment. If we have not heard from you by {e(due)}, these items are reported
+as insufficient information. That describes the information available to us; it is not a finding
+against {e(company['name'])}.</div>
+<p style="margin:18px 0 0;line-height:1.6">Kind regards,<br>{e(sender)}<br>
+{e(sender_email) + "<br>" if sender_email else ""}Provision IT Pty Ltd, Melbourne</p>
+</div>
+<div style="padding:14px 24px;font-size:12px;color:#8A8F9C;border-top:1px solid #E7E8EC">
+Prefer not to receive requests like this? Choose decline at the link and tick "no further requests".
+Reference {e(req['requestId'])}</div></div></body></html>"""
+    return {"subject": subject, "text": text, "html": html_body, "to": req["contactEmail"]}
+
+
+def compose(req: dict, public_base: str):
+    parts = email_parts(req, public_base)
     return mailer.build(
-        [req["contactEmail"]], subject, text,
+        [req["contactEmail"]], parts["subject"], parts["text"], html=parts["html"],
         reply_to=os.getenv("SMTP_REPLY_TO") or req.get("requestedByEmail") or None,
         headers={"X-Provision-Request": req["requestId"]},
     )
@@ -277,7 +418,9 @@ def summary(req: dict) -> dict:
     return {
         "requestId": req["requestId"], "status": req["status"],
         "delivered": bool(delivered),
-        "contactEmail": req["contactEmail"], "criteria": req["criteria"],
+        "contactEmail": req["contactEmail"], "contactName": req.get("contactName"),
+        "criteria": req["criteria"], "documents": req.get("documents", []),
+        "itemCount": len(req["items"]),
         "pillars": req["pillars"], "sentAt": req["sentAt"], "dueAt": req["dueAt"],
         "respondedAt": req.get("respondedAt"), "closedAt": req.get("closedAt"),
         "documentsProvided": len((req.get("response") or {}).get("documents", [])),
@@ -288,9 +431,20 @@ def public_view(req: dict) -> dict:
     """The analyst's view over the API. Includes the response link so it can be
     opened in a demo, but never the raw token on its own."""
     out = summary(req)
+    resp = req.get("response") or {}
+    response = None
+    if resp:
+        # File paths stay on the server; the API serves documents by index.
+        response = {"respondentName": resp.get("respondentName"),
+                    "respondentEmail": resp.get("respondentEmail"),
+                    "declineReason": resp.get("declineReason"),
+                    "documents": [{"index": i, "title": d["title"], "file": d.get("file"),
+                                   "mediaType": d["mediaType"], "bytes": d["bytes"]}
+                                  for i, d in enumerate(resp.get("documents", []))]}
     out.update({"company": req["company"], "runId": req.get("runId"),
                 "items": req["items"], "requestedBy": req.get("requestedBy"),
-                "delivery": req.get("delivery"), "response": req.get("response"),
+                "contactName": req.get("contactName"), "message": req.get("message"),
+                "delivery": req.get("delivery"), "response": response,
                 "optOut": req.get("optOut", False),
                 "closedReason": req.get("closedReason")})
     return out
@@ -312,7 +466,7 @@ h1{{font-size:26px;line-height:1.15;text-transform:uppercase;margin:6px 0 10px}}
 .k{{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8A6A12}}
 p{{line-height:1.65;color:#4A4E5C}}
 ol{{background:#fff;border:1px solid #DCDEE4;padding:16px 20px 16px 40px}}
-li{{margin:6px 0;line-height:1.55}} code{{font-size:12px;color:#8A8F9C}}
+li{{margin:6px 0;line-height:1.55}} li.g{{list-style:none;margin:16px 0 4px -18px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A6A12;font-weight:700}} code{{font-size:12px;color:#8A8F9C}}
 form{{background:#fff;border:1px solid #DCDEE4;padding:20px;margin-top:18px}}
 label{{display:block;font-size:13px;margin:12px 0 6px;color:#0E0F14}}
 input[type=text],input[type=email],textarea{{width:100%;box-sizing:border-box;border:1px solid #C6CAD4;padding:10px;font:inherit}}
@@ -345,12 +499,16 @@ def render_page(req: dict | None, message: str | None = None, error: str | None 
                  "NO_RESPONSE": "has closed"}.get(req["status"], "is closed")
         return _PAGE.format(body=head + f'<p>This request {state}. Thank you.</p>')
 
-    items = "".join(f'<li><code>{e(i["criterionCode"])}</code> {e(i["question"])}</li>'
-                    for i in req["items"])
+    items = "".join(
+        f'<li class="g">{e(title)}</li>' + "".join(
+            f'<li>' + (f'<code>{e(i["criterionCode"])}</code> '
+                       if i.get("kind", "criterion") == "criterion" else "")
+            + f'{e(i.get("label") or i["question"])}</li>' for i in group)
+        for title, group in _grouped(req["items"]))
     err = f'<div class="err">{e(error)}</div>' if error else ""
     body = f"""{head}{err}
-<p>Provision IT is assessing the published {e(_labels(req["pillars"]))}
-disclosures of {e(company["name"])}. We could not find a published disclosure for the items
+<p>Provision IT is assessing the {e(_labels(req["pillars"]))}
+disclosures of {e(company["name"])}. We could not find a published version of the items
 below. If you can help, please attach any relevant document or tell us where it is published,
 by <strong>{e(req["dueAt"][:10])}</strong>.</p>
 <ol>{items}</ol>

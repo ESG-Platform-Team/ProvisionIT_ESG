@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
-from . import auth, companies, disclosure, mailer, pillars, pipeline, report, store
+from . import auth, companies, contacts, disclosure, mailer, pillars, pipeline, report, store
 from .matrix import FRAMEWORK_EDITION, MATRIX_VERSION
 
 app = FastAPI(title="Provision IT ESG Assessment", version="0.2.0")
@@ -163,11 +163,26 @@ async def search_companies(q: str = "", all: bool = False):
     return {"matches": companies.all_companies() if all else companies.find(q)}
 
 
+@app.get("/api/companies/{code}/contacts", dependencies=AUTH)
+async def company_contacts(code: str):
+    """Contact addresses the company publishes on its own website, ranked with
+    shared role inboxes first. Nothing is guessed, stored or sent."""
+    company = companies.get(code)
+    if company is None:
+        _err(404, "COMPANY_NOT_FOUND", f"No company {code}")
+    if not company.get("website"):
+        _err(400, "NO_WEBSITE", "This company has no website on file")
+    found = await contacts.find(company["website"])
+    found["company"] = {"asxCode": company["asxCode"], "name": company["name"]}
+    return found
+
+
 class NewCompany(BaseModel):
     name: str = ""
     website: str
     contactEmail: str = ""
     sector: str = ""
+    asxCode: str = ""
 
 
 @app.post("/api/companies", status_code=201)
@@ -177,7 +192,8 @@ async def add_company(body: NewCompany, user: dict = Depends(require_user)):
     try:
         company = await asyncio.to_thread(companies.add_private, body.name, body.website,
                                           body.contactEmail, body.sector,
-                                          user.get("userId") if user is not GUEST else None)
+                                          user.get("userId") if user is not GUEST else None,
+                                          body.asxCode)
     except companies.CompanyError as exc:
         _err(400, "COMPANY_REJECTED", str(exc))
     return company
@@ -402,7 +418,8 @@ async def create_request(run_id: str, body: NewRequest, user: dict = Depends(req
     existing = _requests_for(run["company"]["asxCode"])
     try:
         req = disclosure.create(run, body.contactEmail, body.pillars, body.dueDays,
-                                body.requestedBy or user["name"], existing)
+                                body.requestedBy or user["name"], existing,
+                                requested_by_email=user.get("email"))
     except (disclosure.RequestError, KeyError) as exc:
         _err(409 if "open" in str(exc) or "opted" in str(exc) or "asked not" in str(exc)
              else 400, "REQUEST_REJECTED", str(exc))
@@ -413,6 +430,72 @@ async def create_request(run_id: str, body: NewRequest, user: dict = Depends(req
         "to": req["contactEmail"], "subject": "Information request " + req["requestId"],
         "delivered": req["delivery"]["delivered"], "record": req["delivery"]["record"]},
         user.get("userId"), run_id=run_id, request_id=req["requestId"])
+    out = disclosure.public_view(req)
+    out["responseUrl"] = disclosure.response_url(req, public_base())
+    return out
+
+
+class RequestForm(BaseModel):
+    """The request form in the Requests tab: any company, chosen documents,
+    written-in items, and optionally the gaps from its latest assessment."""
+    companyCode: str
+    contactEmail: str = ""
+    contactName: str = ""
+    documents: list[str] = Field(default_factory=list)
+    custom: list[str] = Field(default_factory=list)
+    message: str = Field(default="", max_length=2000)
+    dueDays: int | None = None
+    runId: str | None = None
+    includeGaps: bool = False
+
+
+def _form_request(body: RequestForm, user: dict, existing: list[dict] | None,
+                  preview: bool = False) -> dict:
+    company = companies.get(body.companyCode)
+    if company is None:
+        _err(404, "COMPANY_NOT_FOUND", f"No company {body.companyCode}")
+    run = _completed(body.runId) if body.runId and body.includeGaps else None
+    email = body.contactEmail.strip() or (company.get("contactEmail") or "")
+    if preview and not mailer.valid_address(email):
+        email = "contact@company.example"
+    try:
+        return disclosure.create(
+            run, email, None, body.dueDays, user["name"], existing, company=company,
+            documents=body.documents, custom=body.custom, include_gaps=body.includeGaps,
+            contact_name=body.contactName, message=body.message,
+            requested_by_email=user.get("email"))
+    except disclosure.RequestError as exc:
+        if preview:
+            _err(400, "PREVIEW_INCOMPLETE", str(exc))
+        _err(409 if "open" in str(exc) or "asked not" in str(exc) else 400,
+             "REQUEST_REJECTED", str(exc))
+
+
+@app.get("/api/disclosure-requests/catalogue", dependencies=AUTH)
+async def request_catalogue():
+    """The ESG documents the request form offers, grouped by pillar."""
+    return {"documents": disclosure.catalogue(), "defaultDueDays": disclosure.DEFAULT_DUE_DAYS}
+
+
+@app.post("/api/disclosure-requests/preview")
+async def preview_request(body: RequestForm, user: dict = Depends(require_user)):
+    """The exact email the form would send, without sending or saving it."""
+    req = _form_request(body, user, None, preview=True)
+    parts = disclosure.email_parts(req, public_base())
+    return {"subject": parts["subject"], "text": parts["text"], "to": parts["to"],
+            "itemCount": len(req["items"]), "dueAt": req["dueAt"]}
+
+
+@app.post("/api/disclosure-requests", status_code=201)
+async def send_request(body: RequestForm, user: dict = Depends(require_user)):
+    existing = _requests_for(body.companyCode)
+    req = _form_request(body, user, existing)
+    await disclosure.send(req, public_base())
+    store.save_request(req)
+    store.log_email("disclosure-request", {
+        "to": req["contactEmail"], "subject": "Information request " + req["requestId"],
+        "delivered": req["delivery"]["delivered"], "record": req["delivery"]["record"]},
+        user.get("userId"), run_id=req.get("runId"), request_id=req["requestId"])
     out = disclosure.public_view(req)
     out["responseUrl"] = disclosure.response_url(req, public_base())
     return out
@@ -451,6 +534,26 @@ async def get_request(request_id: str):
     return view
 
 
+@app.get("/api/disclosure-requests/{request_id}/documents/{index}", dependencies=AUTH)
+async def request_document(request_id: str, index: int, download: bool = False):
+    """A document a company supplied in answer to a request."""
+    from pathlib import Path
+
+    req = _request(request_id)
+    docs = (req.get("response") or {}).get("documents", [])
+    if not 0 <= index < len(docs):
+        _err(404, "DOCUMENT_NOT_FOUND", "No document with that number on this request")
+    doc = docs[index]
+    path = Path(doc["path"]).resolve()
+    root = Path(disclosure.RESPONSE_DIR).resolve()
+    if root not in path.parents or not path.exists():
+        _err(404, "DOCUMENT_NOT_FOUND", "That document is no longer available")
+    name = (doc.get("file") or path.name).replace('"', "")
+    disposition = "attachment" if download else "inline"
+    return Response(path.read_bytes(), media_type=doc["mediaType"], headers={
+        "Content-Disposition": f'{disposition}; filename="{name}"'})
+
+
 class CloseRequest(BaseModel):
     reason: str | None = None
 
@@ -476,7 +579,7 @@ async def reassess(request_id: str, user: dict = Depends(require_user)):
     if company is None:
         _err(404, "COMPANY_NOT_FOUND", "Company no longer in the registry")
     prior = _completed(req["runId"]) if req.get("runId") else None
-    keys = (prior or {}).get("pillarsRequested") or req["pillars"]
+    keys = (prior or {}).get("pillarsRequested") or req["pillars"] or list(pillars.ORDER)
     run_id = await _launch(company, keys, user)
     return {"runId": run_id, "status": "QUEUED", "pillars": keys, "pollAfterMs": 1500}
 

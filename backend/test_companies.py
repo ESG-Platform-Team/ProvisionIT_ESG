@@ -34,6 +34,14 @@ check("a bad contact email is refused",
 clash = companies.add_private("Acme Two", "acmerecycling.net", "")
 check("codes never collide", clash["asxCode"] != acme["asxCode"])
 
+qan = companies.add_private("Qantas Airways", "qantas.com", "", asx_code="qan")
+check("a listed company can be added with its ASX code",
+      qan["asxCode"] == "QAN" and qan["listed"] is True and companies.label(qan) == "Qantas Airways (ASX: QAN)")
+check("a bad ASX code is refused",
+      raises(lambda: companies.add_private("X", "x-air.com", "", asx_code="TOOLONG1"), companies.CompanyError))
+check("an ASX code already on file is refused",
+      raises(lambda: companies.add_private("Y", "y-bank.com", "", asx_code="BEN"), companies.CompanyError))
+
 section("FINDING IT")
 check("found by name", companies.find("acme recycling")[0]["asxCode"] == acme["asxCode"])
 check("found by website", companies.find("acmerecycling.com.au")[0]["asxCode"] == acme["asxCode"])

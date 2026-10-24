@@ -6,6 +6,20 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- View what a company sent back: each sent request in the Requests tab expands to show the
+  documents provided (open in a new tab or download), who sent them, what was asked for and the
+  timeline. Documents are served only to signed-in users and only from the responses folder
+  (feature/request-composer)
+- Find published contacts: reads the company's own contact, investor, sustainability and privacy
+  pages (respecting robots.txt) and lists the addresses it publishes, role inboxes first, with the
+  page each came from. Nothing is guessed, stored or sent automatically (feature/request-composer)
+- Request composer can search companies on file or add a new one (private, or listed by ASX
+  code) without leaving the form or running an assessment first (feature/request-composer)
+- Request composer in the Requests tab: pick any company, choose ESG documents from a checklist
+  grouped by pillar, add written-in items, a personal note and a due date, optionally include the
+  criteria the latest assessment could not answer, and see the exact email update live before
+  sending. Request emails now have an HTML version with an upload button (feature/request-composer)
+- Add an ASX-listed company that is not on file by giving its ASX code (feature/private-companies)
 - Private companies: add any company by website and contact email; it is stored, appears in
   search and the companies-on-file list, is assessed the same way, and is labelled as a private
   company (not an ASX code) in reports and request emails (feature/private-companies)

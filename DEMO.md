@@ -6,7 +6,7 @@ wifi can't break it.
 ## Before you start
 
 ```
-cd ~/Downloads/provision-esg
+cd ~/Downloads/ProvisionIT-ESG
 ./demo.sh --reset
 ```
 
@@ -75,9 +75,15 @@ Say: "Add SMTP settings, or Amazon SES on AWS, and the same button delivers."
 3. Click **Open the company's response page**. This is what the company sees.
    Upload any PDF, for example
    `backend/fixture-site/docs/modern-slavery-statement-2026.pdf`, and send.
-4. Go to **Requests**. The status is Responded. Click **Re-assess**. The new
-   run includes the company's document, marked *provided on request* and graded
-   C, below anything published.
+4. Go to **Requests**. The status is Responded. Click **View documents** to see
+   what they sent, who sent it and what was asked for; **Open** shows the file in
+   a new tab. Then click **Re-assess**. The new run includes the company's
+   document, marked *provided on request* and graded C, below anything published.
+
+Private company version: in **Requests**, type a company name in the composer,
+choose **Add it**, give its website, click **Find published contacts** to pull
+the addresses it publishes, tick the documents you want and watch the email
+preview update. Use your own email as the contact for the demo.
 
 Then show the other outcome:
 

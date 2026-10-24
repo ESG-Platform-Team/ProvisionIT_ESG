@@ -124,9 +124,10 @@ def _code_for(host: str) -> str:
 
 
 def add_private(name: str, website: str, contact_email: str = "", sector: str = "",
-                created_by: str | None = None) -> dict:
-    """Add an unlisted company. Returns the stored company, or the existing one
-    if a company with the same website is already on file."""
+                created_by: str | None = None, asx_code: str = "") -> dict:
+    """Add a company that is not in the seed list: a private company, or a
+    listed one if an ASX code is given. Returns the stored company, or the
+    existing one if a company with the same website is already on file."""
     from . import store
 
     name = (name or "").strip()
@@ -140,7 +141,13 @@ def add_private(name: str, website: str, contact_email: str = "", sector: str = 
     contact = (contact_email or "").strip()
     if contact and not _EMAIL.match(contact):
         raise CompanyError("Enter a valid contact email, or leave it empty")
-    company = {"asxCode": _code_for(host), "name": name[:160], "website": url,
-               "sector": sector.strip()[:80] or None, "tier": "Private", "listed": False,
-               "contactEmail": contact or None}
+    code = (asx_code or "").strip().upper()
+    if code:
+        if not re.fullmatch(r"[A-Z0-9]{3,5}", code):
+            raise CompanyError("An ASX code is 3 to 5 letters or numbers")
+        if get(code):
+            raise CompanyError(f"{code} is already on file")
+    company = {"asxCode": code or _code_for(host), "name": name[:160], "website": url,
+               "sector": sector.strip()[:80] or None, "tier": "ASX listed" if code else "Private",
+               "listed": bool(code), "contactEmail": contact or None}
     return store.save_company(company, created_by=created_by)

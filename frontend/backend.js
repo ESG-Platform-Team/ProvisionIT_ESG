@@ -90,8 +90,14 @@ export async function listCompanies() {
 
 // Add a private (unlisted) company by its website. Returns the stored company,
 // or the existing one if that website is already on file.
-export async function addCompany(name, website, contactEmail, sector) {
-  return post(`${API_BASE}/api/companies`, { name, website, contactEmail, sector });
+export async function addCompany(name, website, contactEmail, sector, asxCode) {
+  return post(`${API_BASE}/api/companies`, { name, website, contactEmail, sector, asxCode });
+}
+
+// Contact addresses the company publishes on its own website. Nothing is
+// guessed or stored; the analyst picks one.
+export async function findContacts(code) {
+  return json(`${API_BASE}/api/companies/${encodeURIComponent(code)}/contacts`);
 }
 
 export async function searchCompanies(query) {
@@ -157,6 +163,42 @@ export async function emailReport(runId, to, message) {
 export async function createRequest(runId, contactEmail, requestedBy, pillars) {
   return post(`${API_BASE}/api/assessments/${runId}/disclosure-requests`,
     { contactEmail, requestedBy, pillars });
+}
+
+export async function requestCatalogue() {
+  return json(`${API_BASE}/api/disclosure-requests/catalogue`);
+}
+
+// The exact email the request form would send, without sending it.
+export async function previewRequest(form) {
+  return post(`${API_BASE}/api/disclosure-requests/preview`, form);
+}
+
+export async function sendRequestForm(form) {
+  return post(`${API_BASE}/api/disclosure-requests`, form);
+}
+
+export async function getRequest(requestId) {
+  return json(`${API_BASE}/api/disclosure-requests/${requestId}`);
+}
+
+// Open a document a company supplied, in a new tab. Fetched with the session
+// header, then handed to the browser.
+export async function openRequestDocument(requestId, index, download) {
+  const url = `${API_BASE}/api/disclosure-requests/${requestId}/documents/${index}${download ? "?download=true" : ""}`;
+  const tab = download ? null : window.open("", "_blank");
+  const res = await fetch(url, withAuth());
+  if (!res.ok) { if (tab) tab.close(); throw new Error(res.status === 401 ? "Sign in again to open the document" : "Document not available"); }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  if (tab) { tab.location.href = objectUrl; }
+  else {
+    const name = (res.headers.get("content-disposition") || "").match(/filename="([^"]+)"/);
+    const a = document.createElement("a");
+    a.href = objectUrl; a.download = name ? name[1] : "document";
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
 }
 
 export async function listRequests(asxCode) {
