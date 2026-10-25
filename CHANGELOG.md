@@ -6,6 +6,9 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Continuous deployment: after CI passes on main and the release is approved, GitHub Actions
+  deploys to Cloudflare and runs a smoke test against the live site; rollback steps and release
+  responsibilities in DEPLOY.md (ci/continuous-deployment)
 - End-to-end browser tests for the analyst journey (e2e/, Playwright), a committed-secrets scan
   and a syntax check of every browser and Worker script, all run in CI; README rewritten in
   Markdown with the test layers (test/e2e-browser-tests)

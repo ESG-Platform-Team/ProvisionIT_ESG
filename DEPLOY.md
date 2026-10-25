@@ -108,14 +108,63 @@ Open `https://<your site>/api/health`. You want:
 
 Then open the site, create an account and run **TST**.
 
-## Every update after that
+## Every update after that: continuous deployment
+
+Merging to `main` deploys on its own (`.github/workflows/deploy.yml`):
+
+```
+pull request ──> CI (lint, unit, acceptance, e2e, secret scan, image build)
+                   │ reviewed and merged into integration
+release PR ──> main ──> CI passes ──> approval on "production" ──> wrangler deploy ──> smoke test
+```
+
+1. CI must pass on `main`. A red CI never deploys.
+2. The deploy job waits on the GitHub environment **production**; Agam (or the
+   named backup) approves it in the Actions tab.
+3. `npx wrangler deploy` publishes the Worker, website and API container. The
+   commit hash is stored as the version message.
+4. `scripts/smoke_test.sh` waits for the container to wake, then checks the
+   site, the API, that sign-in is enforced and the matrix versions.
+
+One-time setup in GitHub (Settings):
+
+- **Secrets and variables > Actions:** `CLOUDFLARE_API_TOKEN` (a token with
+  "Edit Cloudflare Workers") and `CLOUDFLARE_ACCOUNT_ID`.
+- **Environments:** create `production`, add Agam as required reviewer.
+
+App secrets (`DATABASE_URL`, `JWT_SECRET`, `GEMINI_API_KEY`, `SMTP_*`) stay in
+Cloudflare and are never copied into GitHub. Secrets and the database carry
+over between deploys.
+
+By hand, for example from a laptop:
 
 ```
 cd cloudflare
 npx wrangler deploy
+bash ../scripts/smoke_test.sh https://provisionit-esg.provisionit-esg.workers.dev
 ```
 
-Secrets and the database carry over.
+## Rolling back
+
+```
+cd cloudflare
+npx wrangler deployments list     # recent versions with their commit message
+npx wrangler rollback             # back to the previous version
+```
+
+The database is not rolled back. Every schema change so far only adds tables or
+columns, so an older version still runs against a newer database.
+
+## Release responsibilities
+
+| Step | Who | Backup |
+|---|---|---|
+| Review and merge feature PRs into `integration` | Named reviewer, then Agam merges | Pulitha |
+| Release PR `integration` → `main` | Agam opens, Pulitha approves | Jun approves |
+| Approve the production deploy | Agam | Pulitha |
+| Watch the smoke test, roll back if it fails | Agam | Pulitha |
+| Cloudflare and Neon secrets | Agam | none: shared through Cloudflare only |
+| Tell the client what changed | Agam, from CHANGELOG.md | Jun |
 
 ## Good to know
 
@@ -132,6 +181,9 @@ Secrets and the database carry over.
 - **Links in request emails** use the site's own address automatically. Set
   `PUBLIC_BASE_URL` in `wrangler.jsonc` only if you add a custom domain and want
   emails to use it.
+- **Health:** `/api/health` reports `llmConfigured` and `smtpConfigured`. If
+  `llmConfigured` is false the live site reads documents by keyword matching,
+  and every assessment says so.
 - **Logs:** `npx wrangler tail` for the Worker. Container output is in the
   Cloudflare dashboard under Workers & Pages > provisionit-esg > Containers.
 - **Never** put keys in `wrangler.jsonc` or commit `backend/.env`. Secrets go
