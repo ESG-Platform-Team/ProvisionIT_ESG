@@ -31,15 +31,21 @@ import sqlite3
 import threading
 from pathlib import Path
 
-from sqlalchemy import (JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text,
-                        UniqueConstraint, create_engine, event)
+from sqlalchemy import (JSON, Boolean, DateTime, Float, ForeignKey, Integer, LargeBinary, String,
+                        Text, UniqueConstraint, create_engine, event)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 DEFAULT_SQLITE = Path(os.getenv("DB_PATH", "data/platform.db"))
 
 
 def _url() -> str:
-    return os.getenv("DATABASE_URL") or f"sqlite:///{DEFAULT_SQLITE}"
+    """DATABASE_URL as Neon, Supabase or RDS print it ("postgres://..." or
+    "postgresql://...") is accepted and pointed at the psycopg 3 driver."""
+    url = os.getenv("DATABASE_URL") or f"sqlite:///{DEFAULT_SQLITE}"
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
 
 
 def utcnow() -> datetime.datetime:
@@ -183,6 +189,9 @@ class RequestDocument(Base):
     path: Mapped[str] = mapped_column(Text)
     media_type: Mapped[str] = mapped_column(String(80))
     bytes: Mapped[int] = mapped_column(Integer)
+    # The file itself. Cloud containers lose their disk when they sleep, so the
+    # database is the copy that lasts; the file on disk is a working copy.
+    content: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
 
 
 class EmailLog(Base):
@@ -216,7 +225,8 @@ def engine():
                 path = Path(url.removeprefix("sqlite:///"))
                 path.parent.mkdir(parents=True, exist_ok=True)
                 legacy = _move_legacy(path)
-            _engine = create_engine(url, future=True)
+            # pool_pre_ping: hosted Postgres drops idle connections.
+            _engine = create_engine(url, future=True, pool_pre_ping=True)
             if url.startswith("sqlite"):
                 @event.listens_for(_engine, "connect")
                 def _fk_on(conn, _record):
@@ -233,6 +243,7 @@ def engine():
 # tables but never alters existing ones, so add these if a database predates them.
 _LATER_COLUMNS = {
     "request_items": {"kind": "VARCHAR(20) DEFAULT 'criterion'", "label": "TEXT"},
+    "request_documents": {"content": "BLOB"},
 }
 
 
@@ -244,6 +255,8 @@ def _add_missing_columns(eng) -> None:
             have = {c["name"] for c in insp.get_columns(table)}
             for name, ddl in cols.items():
                 if name not in have:
+                    if eng.dialect.name == "postgresql":
+                        ddl = ddl.replace("BLOB", "BYTEA")
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 

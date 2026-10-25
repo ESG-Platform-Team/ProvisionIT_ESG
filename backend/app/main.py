@@ -13,6 +13,7 @@ v0.2 adds, without changing anything a v0.1 client relies on:
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import os
 import re
 
@@ -43,10 +44,27 @@ RUNS: dict[str, pipeline.RunState] = {}
 RESULTS: dict[str, dict] = {}
 
 
+_request_base: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "request_base", default=None)
+
+
+@app.middleware("http")
+async def _remember_base(request: Request, call_next):
+    """Remember the address this request came in on (behind Cloudflare, the
+    public https domain), for links in request emails."""
+    host = request.headers.get("x-forwarded-host")
+    base = (f"{request.url.scheme}://{host}" if host else str(request.base_url)).rstrip("/")
+    token = _request_base.set(base)
+    try:
+        return await call_next(request)
+    finally:
+        _request_base.reset(token)
+
+
 def public_base() -> str:
-    """Where a company's browser can reach /respond. localhost in development,
-    the public API domain once deployed."""
-    return os.getenv("PUBLIC_BASE_URL", "http://localhost:8080")
+    """Where a company's browser can reach /respond: PUBLIC_BASE_URL if set,
+    otherwise the address the analyst's request came in on."""
+    return os.getenv("PUBLIC_BASE_URL") or _request_base.get() or "http://localhost:8080"
 
 
 def _err(status: int, code: str, message: str):
@@ -537,16 +555,13 @@ async def get_request(request_id: str):
 @app.get("/api/disclosure-requests/{request_id}/documents/{index}", dependencies=AUTH)
 async def request_document(request_id: str, index: int, download: bool = False):
     """A document a company supplied in answer to a request."""
-    from pathlib import Path
-
     req = _request(request_id)
     docs = (req.get("response") or {}).get("documents", [])
     if not 0 <= index < len(docs):
         _err(404, "DOCUMENT_NOT_FOUND", "No document with that number on this request")
     doc = docs[index]
-    path = Path(doc["path"]).resolve()
-    root = Path(disclosure.RESPONSE_DIR).resolve()
-    if root not in path.parents or not path.exists():
+    path = disclosure.restore_file(request_id, doc)
+    if path is None:
         _err(404, "DOCUMENT_NOT_FOUND", "That document is no longer available")
     name = (doc.get("file") or path.name).replace('"', "")
     disposition = "attachment" if download else "inline"

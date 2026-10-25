@@ -112,6 +112,7 @@ erDiagram
         string path
         string media_type
         int bytes
+        blob content "the file itself"
     }
     email_log {
         int id PK

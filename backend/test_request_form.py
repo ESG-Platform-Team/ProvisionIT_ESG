@@ -105,6 +105,25 @@ check("documents need a signed-in user",
 check("a document number that does not exist is a 404",
       client.get(f"/api/disclosure-requests/{out['requestId']}/documents/9", headers=H).status_code == 404)
 
+section("DOCUMENTS SURVIVE AN EMPTY DISK (cloud container restart)")
+import shutil  # noqa: E402
+
+from app import disclosure  # noqa: E402
+
+shutil.rmtree(TMP / "responses")
+again = client.get(f"/api/disclosure-requests/{out['requestId']}/documents/0", headers=H)
+check("a supplied document still opens, from the database copy",
+      again.status_code == 200 and again.content == b"%PDF-1.4 modern slavery")
+shutil.rmtree(TMP / "responses")
+provided = disclosure.response_documents([store.get_request(out["requestId"])])
+check("re-assessment gets the files back on disk too",
+      len(provided) == 2 and all(Path(d["path"]).is_file() for d in provided))
+store.save_request(store.get_request(out["requestId"]))
+shutil.rmtree(TMP / "responses")
+check("saving the request again keeps the stored copy",
+      client.get(f"/api/disclosure-requests/{out['requestId']}/documents/0",
+                 headers=H).status_code == 200)
+
 section("WITH AN ASSESSMENT")
 from testfixtures import fake_run  # noqa: E402
 

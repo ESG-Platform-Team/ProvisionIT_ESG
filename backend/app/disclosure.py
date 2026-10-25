@@ -400,12 +400,30 @@ def decline(req: dict, reason: str = "", opt_out: bool = False, name: str = "") 
     return req
 
 
+def restore_file(request_id: str, doc: dict) -> Path | None:
+    """Path to a supplied document, rewriting it from the database if the disk
+    copy is missing. Only paths inside RESPONSE_DIR are ever written or read."""
+    from . import store
+
+    path = Path(doc["path"]).resolve()
+    if Path(RESPONSE_DIR).resolve() not in path.parents:
+        return None
+    if not path.is_file():
+        content = store.request_document_content(request_id, doc["path"])
+        if content is None:
+            return None
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    return path
+
+
 def response_documents(requests: list[dict]) -> list[dict]:
     """Documents from every answered request, ready for the pipeline."""
     out = []
     for r in requests:
         if r["status"] == "RESPONDED":
             for d in (r.get("response") or {}).get("documents", []):
+                restore_file(r["requestId"], d)
                 out.append({"title": d["title"], "path": d["path"],
                             "mediaType": d["mediaType"], "requestId": r["requestId"]})
     return out
