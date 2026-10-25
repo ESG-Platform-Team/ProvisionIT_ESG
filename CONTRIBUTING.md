@@ -131,6 +131,10 @@ for t in test_*.py; do python "$t" || exit 1; done
 ruff check .
 ```
 
+Acceptance tests (`backend/test_acceptance.py`) are named after the user
+stories on Confluence (US-xx). A change that alters what a story promises
+updates that story's block, and a new story gets a new block.
+
 JavaScript (frontend):
 
 - No build step. `frontend/backend.js` is the only file that talks to the API.

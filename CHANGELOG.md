@@ -6,6 +6,8 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Acceptance tests named after the user stories: 31 stories, each with its Given / When / Then,
+  run end to end through the API on TST; CI keeps the per-story report (test/acceptance-tests)
 - PostHog for user acceptance testing: page views, autocapture, session replay with inputs and
   email addresses masked, named events for the search-to-report funnel, and in-app surveys. Off
   until a key is set in frontend/analytics.config.js; vendored posthog-js 1.435.5; never loads on
@@ -102,6 +104,11 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The website finds the API on its own domain when deployed and on localhost:8080 for the local
   demo; request email links use the address the analyst is on unless PUBLIC_BASE_URL is set
   (feature/cloudflare-deploy)
+
+### Fixed
+- Evidence now records the engine that actually read it (KEYWORD or LLM). It always said LLM,
+  which was wrong on keyword runs such as a site with no Gemini key. Found by the acceptance
+  tests (test/acceptance-tests)
 
 ## [0.1.0] - 2026-09-07
 

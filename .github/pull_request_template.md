@@ -13,6 +13,7 @@ Closes: ESG-
 - [ ] All `backend/test_*.py` pass locally
 - [ ] `ruff check .` passes in `backend/`
 - [ ] Checked in the browser with `./demo.sh --reset` (if the interface or API changed)
+- [ ] Acceptance test updated for any user story this changes (`backend/test_acceptance.py`)
 
 <!-- Anything else you tried, and screenshots for interface changes. -->
 
