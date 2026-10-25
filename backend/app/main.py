@@ -5,6 +5,7 @@ v0.2 adds, without changing anything a v0.1 client relies on:
 - pillars on POST /api/assessments, and a pillars array on the result
 - the machine-interpretation statement on every result
 - persisted runs and history
+- the PDF report, and emailing it
 """
 
 from __future__ import annotations
@@ -14,9 +15,10 @@ import os
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import Response
+from pydantic import BaseModel, Field
 
-from . import companies, pillars, pipeline, store
+from . import companies, mailer, pillars, pipeline, report, store
 from .matrix import FRAMEWORK_EDITION, MATRIX_VERSION
 
 app = FastAPI(title="Provision IT ESG Assessment", version="0.2.0")
@@ -76,6 +78,7 @@ async def health():
                      "draft": pillars.get(k)["draft"]} for k in pillars.ORDER],
         "llmConfigured": bool(os.getenv("GEMINI_API_KEY")),
         "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+        "smtpConfigured": mailer.configured(),
     }
 
 
@@ -176,6 +179,110 @@ async def get_evidence(run_id: str, code: str):
                 return {"criterionCode": row["criterionCode"], "status": row["status"],
                         "interpretedBy": row.get("interpretedBy"), "evidence": enriched}
     _err(404, "CRITERION_NOT_FOUND", f"No criterion {code} in this run")
+
+
+def _report_name(run: dict) -> str:
+    date = (run.get("completedAt") or "")[:10]
+    return f"{run['company']['asxCode']}-esg-assessment-{date}.pdf"
+
+
+@app.get("/api/assessments/{run_id}/report.pdf", dependencies=AUTH)
+async def report_pdf(run_id: str, download: bool = False):
+    run = _completed(run_id)
+    pdf = await asyncio.to_thread(report.render, run)
+    disposition = "attachment" if download else "inline"
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'{disposition}; filename="{_report_name(run)}"'})
+
+
+class EmailReport(BaseModel):
+    to: list[str] | str
+    message: str | None = Field(default=None, max_length=2000)
+    includeJson: bool = True
+
+
+@app.post("/api/assessments/{run_id}/email")
+async def email_report(run_id: str, body: EmailReport, user: dict = Depends(require_user)):
+    run = _completed(run_id)
+    try:
+        to = mailer.clean_recipients(body.to)
+    except ValueError as exc:
+        _err(400, "BAD_RECIPIENT", str(exc))
+
+    import json
+    pdf = await asyncio.to_thread(report.render, run)
+    attachments = [(_report_name(run), pdf, "application/pdf")]
+    if body.includeJson:
+        # Mick's second output: machine readable, for another platform.
+        attachments.append((_report_name(run).replace(".pdf", ".json"),
+                            json.dumps(run, indent=2).encode(), "application/json"))
+
+    c = run["company"]
+    lines = [f"  {p['label']:<14} {p['result']['band'].replace('_', ' ').title():<22} "
+             f"confidence {p['result']['confidence']}" for p in run.get("pillars", [])]
+    text = (
+        (body.message.strip() + "\n\n" if body.message else "")
+        + f"ESG disclosure assessment: {c['name']} (ASX: {c['asxCode']})\n"
+        f"Assessed {(run.get('completedAt') or '')[:10]}, run {run['runId']}\n\n"
+        + "\n".join(lines)
+        + "\n\nThe full report is attached as a PDF"
+        + (", with the machine-readable result as JSON" if body.includeJson else "")
+        + ".\n\nMachine interpretation\n" + run["interpretation"]["statement"] + "\n\n"
+        + (f"Sent by {user['name']} ({user['email']}) via the Provision IT ESG platform\n"
+           if user.get("email") else "Provision IT ESG platform\n")
+    )
+    msg = mailer.build(to, f"ESG assessment: {c['name']} ({c['asxCode']})", text,
+                       html=_report_email_html(run, body.message, body.includeJson, user),
+                       attachments=attachments,
+                       reply_to=os.getenv("SMTP_REPLY_TO") or user.get("email") or None)
+    return await mailer.send(msg, "report")
+
+
+def _report_email_html(run: dict, message: str | None, include_json: bool,
+                       user: dict | None = None) -> str:
+    """The same content as the plain text email, laid out so the summary reads
+    as a table in mail clients that show HTML. Plain text stays the fallback."""
+    from html import escape as e
+
+    c = run["company"]
+    rows = "".join(
+        f'<tr><td style="padding:10px 14px;border-bottom:1px solid #E7E8EC">{e(p["label"])}</td>'
+        f'<td style="padding:10px 14px;border-bottom:1px solid #E7E8EC;font-weight:700">'
+        f'{e(p["result"]["band"].replace("_", " ").title())}</td>'
+        f'<td style="padding:10px 14px;border-bottom:1px solid #E7E8EC;text-align:center">'
+        f'{e(str(p["result"]["confidence"]))}</td></tr>'
+        for p in run.get("pillars", []))
+    note = (f'<p style="margin:0 0 18px;line-height:1.6">{e(message.strip())}</p>'
+            if message and message.strip() else "")
+    sender = (f"Sent by {e(user['name'])} ({e(user['email'])}) via the "
+              if user and user.get("email") else "")
+    attached = "the full report as a PDF" + (", and the machine-readable result as JSON"
+                                              if include_json else "")
+    return f"""<!doctype html><html><body style="margin:0;background:#F4F5F7;
+font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0E0F14">
+<div style="max-width:620px;margin:0 auto;background:#fff">
+<div style="background:#0E0F14;border-top:4px solid #F4BF3F;padding:18px 24px;color:#F4F5F7;
+font-weight:700;letter-spacing:.02em">Provision IT &middot; ESG assessment</div>
+<div style="padding:24px">
+{note}
+<div style="font-size:20px;font-weight:800;margin-bottom:4px">{e(c['name'])} (ASX: {e(c['asxCode'])})</div>
+<div style="font-size:13px;color:#5A5F6D;margin-bottom:18px">Assessed
+{e((run.get('completedAt') or '')[:10])} &middot; run {e(run['runId'])}</div>
+<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:18px">
+<tr style="background:#F4F5F7;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5A5F6D">
+<th style="padding:8px 14px;text-align:left">Pillar</th><th style="padding:8px 14px;text-align:left">Band</th>
+<th style="padding:8px 14px">Confidence</th></tr>{rows}</table>
+<p style="margin:0 0 18px;line-height:1.6">Attached: {attached}.</p>
+<div style="background:#FDF3D8;border-left:3px solid #F4BF3F;padding:12px 16px;font-size:13px;
+line-height:1.6"><b>Machine interpretation.</b> {e(run['interpretation']['statement'])}</div>
+</div>
+<div style="padding:14px 24px;font-size:12px;color:#8A8F9C;border-top:1px solid #E7E8EC">
+{sender}Provision IT ESG platform</div></div></body></html>"""
+
+
+@app.get("/api/outbox", dependencies=AUTH)
+async def outbox(limit: int = 50):
+    return {"smtpConfigured": mailer.configured(), "messages": mailer.list_records(limit)}
 
 
 @app.get("/api/me/preferences")
