@@ -6,19 +6,21 @@ v0.2 adds, without changing anything a v0.1 client relies on:
 - the machine-interpretation statement on every result
 - persisted runs and history
 - the PDF report, and emailing it
+- disclosure requests, and the company's response page at /respond/{token}
 """
 
 from __future__ import annotations
 
 import asyncio
 import os
+import re
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
-from . import companies, mailer, pillars, pipeline, report, store
+from . import companies, disclosure, mailer, pillars, pipeline, report, store
 from .matrix import FRAMEWORK_EDITION, MATRIX_VERSION
 
 app = FastAPI(title="Provision IT ESG Assessment", version="0.2.0")
@@ -38,6 +40,12 @@ app.add_middleware(
 
 RUNS: dict[str, pipeline.RunState] = {}
 RESULTS: dict[str, dict] = {}
+
+
+def public_base() -> str:
+    """Where a company's browser can reach /respond. localhost in development,
+    the public API domain once deployed."""
+    return os.getenv("PUBLIC_BASE_URL", "http://localhost:8080")
 
 
 def _err(status: int, code: str, message: str):
@@ -63,6 +71,18 @@ def _completed(run_id: str) -> dict:
     if run is None:
         _err(404, "RUN_NOT_FOUND", "No completed run with that id")
     return run
+
+
+def _requests_for(asx_code: str) -> list[dict]:
+    """Every request for a company, with due dates applied and saved back."""
+    out = []
+    for req in store.list_requests(asx_code):
+        before = req["status"]
+        disclosure.refresh(req)
+        if req["status"] != before:
+            store.save_request(req)
+        out.append(req)
+    return out
 
 
 # --- Health and search -------------------------------------------------------
@@ -99,11 +119,15 @@ async def _launch(company: dict, pillar_keys: list[str], user: dict | None = Non
     run_id = pipeline.new_run_id()
     state = pipeline.RunState(run_id, company, pillar_keys)
     RUNS[run_id] = state
+    requests = _requests_for(company["asxCode"])
 
     async def _work():
         try:
             payload = await pipeline.run_assessment(
-                company, state, pillar_keys=pillar_keys)
+                company, state, pillar_keys=pillar_keys,
+                extra_documents=disclosure.response_documents(requests),
+                disclosure_requests=[disclosure.summary(r) for r in requests],
+            )
             if user:
                 payload["requestedBy"] = {"name": user["name"], "email": user.get("email")}
             RESULTS[run_id] = payload
@@ -283,6 +307,160 @@ line-height:1.6"><b>Machine interpretation.</b> {e(run['interpretation']['statem
 @app.get("/api/outbox", dependencies=AUTH)
 async def outbox(limit: int = 50):
     return {"smtpConfigured": mailer.configured(), "messages": mailer.list_records(limit)}
+
+
+# --- Disclosure requests -----------------------------------------------------
+
+class NewRequest(BaseModel):
+    contactEmail: str
+    pillars: list[str] | None = None
+    dueDays: int | None = None
+    requestedBy: str | None = None
+
+
+@app.post("/api/assessments/{run_id}/disclosure-requests", status_code=201)
+async def create_request(run_id: str, body: NewRequest, user: dict = Depends(require_user)):
+    run = _completed(run_id)
+    existing = _requests_for(run["company"]["asxCode"])
+    try:
+        req = disclosure.create(run, body.contactEmail, body.pillars, body.dueDays,
+                                body.requestedBy or user["name"], existing)
+    except (disclosure.RequestError, KeyError) as exc:
+        _err(409 if "open" in str(exc) or "opted" in str(exc) or "asked not" in str(exc)
+             else 400, "REQUEST_REJECTED", str(exc))
+    req["requestedByEmail"] = user.get("email")
+    await disclosure.send(req, public_base())
+    store.save_request(req)
+    out = disclosure.public_view(req)
+    out["responseUrl"] = disclosure.response_url(req, public_base())
+    return out
+
+
+@app.get("/api/disclosure-requests", dependencies=AUTH)
+async def list_requests(asxCode: str | None = None):
+    reqs = _requests_for(asxCode) if asxCode else [
+        disclosure.refresh(r) for r in store.list_requests()]
+    out = []
+    for r in reqs:
+        view = disclosure.public_view(r)
+        if r["status"] == "SENT":
+            view["responseUrl"] = disclosure.response_url(r, public_base())
+        out.append(view)
+    return {"requests": out}
+
+
+def _request(request_id: str) -> dict:
+    req = store.get_request(request_id)
+    if req is None:
+        _err(404, "REQUEST_NOT_FOUND", "No disclosure request with that id")
+    before = req["status"]
+    disclosure.refresh(req)
+    if req["status"] != before:
+        store.save_request(req)
+    return req
+
+
+@app.get("/api/disclosure-requests/{request_id}", dependencies=AUTH)
+async def get_request(request_id: str):
+    req = _request(request_id)
+    view = disclosure.public_view(req)
+    if req["status"] == "SENT":
+        view["responseUrl"] = disclosure.response_url(req, public_base())
+    return view
+
+
+class CloseRequest(BaseModel):
+    reason: str | None = None
+
+
+@app.post("/api/disclosure-requests/{request_id}/close", dependencies=AUTH)
+async def close_request(request_id: str, body: CloseRequest | None = None):
+    req = _request(request_id)
+    try:
+        disclosure.close(req, body.reason if body else None)
+    except disclosure.RequestError as exc:
+        _err(409, "REQUEST_CLOSED", str(exc))
+    store.save_request(req)
+    return disclosure.public_view(req)
+
+
+@app.post("/api/disclosure-requests/{request_id}/reassess", status_code=202)
+async def reassess(request_id: str, user: dict = Depends(require_user)):
+    """Run the same pillars again for the company. Documents from every answered
+    request are included and marked as provided on request; unanswered requests
+    annotate the criteria they covered."""
+    req = _request(request_id)
+    company = companies.get(req["company"]["asxCode"])
+    if company is None:
+        _err(404, "COMPANY_NOT_FOUND", "Company no longer in the registry")
+    prior = _completed(req["runId"]) if req.get("runId") else None
+    keys = (prior or {}).get("pillarsRequested") or req["pillars"]
+    run_id = await _launch(company, keys, user)
+    return {"runId": run_id, "status": "QUEUED", "pillars": keys, "pollAfterMs": 1500}
+
+
+# --- The company's side: no login, the token is the credential -------------
+
+_TOKEN = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+
+
+def _by_token(token: str) -> dict | None:
+    if not _TOKEN.match(token):
+        return None
+    req = store.get_request_by_token(token)
+    if req:
+        before = req["status"]
+        disclosure.refresh(req)
+        if req["status"] != before:
+            store.save_request(req)
+    return req
+
+
+@app.get("/respond/{token}", response_class=HTMLResponse)
+async def response_page(token: str):
+    req = _by_token(token)
+    return HTMLResponse(disclosure.render_page(req), status_code=200 if req else 404)
+
+
+@app.post("/respond/{token}", response_class=HTMLResponse)
+async def submit_response(token: str, files: list[UploadFile] = File(default=[]),
+                          note: str = Form(""), name: str = Form(""), email: str = Form("")):
+    req = _by_token(token)
+    if req is None:
+        return HTMLResponse(disclosure.render_page(None), status_code=404)
+    blobs = []
+    for f in files[: disclosure.MAX_FILES + 1]:
+        if not f.filename:
+            continue
+        data = await f.read(disclosure.MAX_FILE_BYTES + 1)
+        blobs.append((f.filename, data))
+    try:
+        disclosure.record_response(req, blobs, note, name, email)
+    except disclosure.RequestError as exc:
+        return HTMLResponse(disclosure.render_page(req, error=str(exc)), status_code=400)
+    store.save_request(req)
+    n = len(req["response"]["documents"])
+    return HTMLResponse(disclosure.render_page(
+        req, message=f"Thank you. We received {n} item{'s' if n != 1 else ''}. They will be "
+                     "recorded as provided on request in the next assessment."))
+
+
+@app.post("/respond/{token}/decline", response_class=HTMLResponse)
+async def decline_request(token: str, request: Request):
+    req = _by_token(token)
+    if req is None:
+        return HTMLResponse(disclosure.render_page(None), status_code=404)
+    form = await request.form()
+    try:
+        disclosure.decline(req, str(form.get("reason", "")), bool(form.get("optOut")),
+                           str(form.get("name", "")))
+    except disclosure.RequestError as exc:
+        return HTMLResponse(disclosure.render_page(req, error=str(exc)), status_code=400)
+    store.save_request(req)
+    msg = "Thank you for letting us know. The request is closed."
+    if req.get("optOut"):
+        msg += " We will not send further requests to this company."
+    return HTMLResponse(disclosure.render_page(req, message=msg))
 
 
 @app.get("/api/me/preferences")

@@ -6,6 +6,11 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Disclosure requests: email a company the criteria public sources did not answer, with
+  a due date, secure upload link and opt-out (feature/disclosure-requests)
+- Company response page; documents provided are re-assessed and graded C; a decline or
+  no reply is reported as insufficient information, never a zero (feature/disclosure-
+  requests)
 - PDF report: every pillar, quoted evidence with page numbers, source log, method notes
   (feature/pdf-report-email)
 - Email the report with the JSON result attached; without SMTP settings every message is

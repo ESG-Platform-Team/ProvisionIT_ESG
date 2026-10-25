@@ -2,6 +2,11 @@
 Mick's confirmed test companies, plus room for the tougher targets he said would
 come later.
 
+contactEmail is the address a disclosure request goes to. It is set only for the
+fixture. For a real company the analyst enters the published investor relations
+or company secretary address when making the request, rather than the platform
+holding a list of contacts.
+
 These are starting points for discovery, not a hardcoded document list. The
 harvester crawls the website and finds whatever governance material is actually
 published, which is the behaviour we need to demonstrate. extraUrls exists for
@@ -14,7 +19,8 @@ COMPANIES = [
     # pipeline with no internet at all, which is how to rehearse a demo on
     # unreliable wifi and how the integration test runs.
     {"asxCode": "TST", "name": "Fixture Test Group", "sector": "Test",
-     "tier": "Fixture", "website": "http://localhost:8123", "extraUrls": []},
+     "tier": "Fixture", "website": "http://localhost:8123", "extraUrls": [],
+     "contactEmail": "company.secretary@fixture-test.example"},
     {"asxCode": "BHP", "name": "BHP Group", "sector": "Materials",
      "tier": "ASX 20", "website": "https://www.bhp.com", "extraUrls": []},
     {"asxCode": "FMG", "name": "Fortescue", "sector": "Materials",
