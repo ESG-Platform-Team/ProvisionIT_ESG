@@ -33,10 +33,27 @@ from pathlib import Path
 import httpx
 
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+
+# Tried in order when the configured model is withdrawn. gemini-2.5-flash was
+# retired for new users mid-build and took every run down with it; a fallback
+# list turns that into a log line instead of an outage.
+FALLBACK_MODELS = [m.strip() for m in os.getenv(
+    "GEMINI_FALLBACK_MODELS", "gemini-3.7-flash").split(",") if m.strip()]
 DEFAULT_RPM = int(os.getenv("GEMINI_RPM", "10"))
 
 CACHE_DIR = Path(os.getenv("LLM_CACHE_DIR", "data/llm_cache"))
+
+
+def replay_mode() -> bool:
+    """LLM_REPLAY=1 answers only from the cache and never calls Gemini.
+
+    The cache holds real model output, keyed by the exact prompt, so a replayed
+    run shows the same findings the model gave when the cache was filled. A
+    prompt that was never recorded falls back to keyword extraction and says so.
+    Used for the offline demo and for recording, where waiting on the API's rate
+    limit is dead air."""
+    return os.getenv("LLM_REPLAY", "").strip().lower() in ("1", "true", "yes")
 
 # Keyed by content hash plus matrix version, exactly as the DynamoDB extraction
 # cache is in the AWS design. A hit means the LLM is never called.
@@ -61,11 +78,13 @@ FINDING_SCHEMA = {
                     "rationale": {"type": "string"},
                     "excerpt": {"type": "string"},
                     "page": {"type": "integer"},
+                    "sourceTitle": {"type": "string"},
                     "confidence": {"type": "number"},
                 },
                 "required": [
                     "criterionCode", "found", "explainedDeparture",
-                    "maturitySignal", "rationale", "excerpt", "page", "confidence",
+                    "maturitySignal", "rationale", "excerpt", "page",
+                    "sourceTitle", "confidence",
                 ],
             },
         }
@@ -74,9 +93,10 @@ FINDING_SCHEMA = {
 }
 
 
-SYSTEM_RULES = """You are reading published corporate governance material from an
-ASX listed entity and reporting what is present in the text. You are not rating
-the company and you are not forming an opinion about it.
+SYSTEM_RULES = """You are reading corporate disclosure material from an ASX listed
+entity, covering governance, climate and environment, or people and social
+topics, and reporting what is present in the text. You are not rating the
+company and you are not forming an opinion about it.
 
 Rules you must follow exactly:
 
@@ -87,10 +107,13 @@ Rules you must follow exactly:
 2. excerpt must be a verbatim span copied from the passages, at most 40 words.
    If found=false, excerpt must be an empty string.
 3. page must be the page number given in the passage header the excerpt came
-   from. If found=false, page must be 0.
-4. explainedDeparture=true only when the text states the entity does not follow
-   the recommendation AND gives a reason. Under the ASX "if not, why not" model
-   that is legitimate conduct, not a failure, so do not treat it as absence.
+   from, and sourceTitle must be the SOURCE name in that same header. If
+   found=false, page must be 0 and sourceTitle an empty string.
+4. explainedDeparture=true only when the text states the entity does not do what
+   the criterion describes AND gives a reason. Under the ASX "if not, why not"
+   model that is legitimate conduct, not a failure, so do not treat it as
+   absence. The same applies to an explained omission, for example Scope 3
+   emissions not reported with a stated reason.
 5. maturitySignal describes how far the text shows the practice has gone:
    STATED means the entity says it does this.
    IMPLEMENTED means the text shows it actually happens, with specifics.
@@ -129,20 +152,25 @@ class GeminiClient:
         self.use_cache = use_cache
         self.calls_made = 0
         self.cache_hits = 0
+        self.model_used = model
 
     @property
     def configured(self) -> bool:
-        return bool(self.api_key)
+        return bool(self.api_key) or replay_mode()
 
     async def extract_principle(
         self, client: httpx.AsyncClient, principle: dict,
         passages: list[tuple[str, int, str]], matrix_version: str,
+        framework_name: str = "ASX Corporate Governance Council",
+        unit_name: str = "Principle",
     ) -> list[dict]:
-        """One call, one principle. passages are (document title, page, text)."""
+        """One call, one principle or theme. passages are (document title, page,
+        text). framework_name and unit_name only change the prompt header, which
+        is how the same call serves all three pillars."""
         if not passages:
             return []
 
-        prompt = _build_prompt(principle, passages)
+        prompt = _build_prompt(principle, passages, framework_name, unit_name)
         key = _cache_key(self.model, matrix_version, principle["number"], prompt)
 
         if self.use_cache:
@@ -150,6 +178,9 @@ class GeminiClient:
             if cached is not None:
                 self.cache_hits += 1
                 return cached
+        if replay_mode():
+            raise RuntimeError("replay mode has no recorded answer for this text, "
+                               "using keyword extraction")
 
         payload = {
             "systemInstruction": {"parts": [{"text": SYSTEM_RULES}]},
@@ -174,9 +205,22 @@ class GeminiClient:
                 "GEMINI_API_KEY is not set. Export it, or run with --no-llm to "
                 "use keyword extraction only."
             )
-        url = f"{API_ROOT}/{self.model}:generateContent"
         headers = {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
+        candidates = [self.model] + [m for m in FALLBACK_MODELS if m != self.model]
+        last_error = None
+        for model in candidates:
+            try:
+                data = await self._post_model(client, model, headers, payload)
+            except _ModelGone as exc:
+                last_error = exc
+                continue
+            if model != self.model:
+                self.model_used = model
+            return data
+        raise RuntimeError(f"No configured Gemini model is available: {last_error}")
 
+    async def _post_model(self, client, model, headers, payload) -> dict:
+        url = f"{API_ROOT}/{model}:generateContent"
         delay = 2.0
         for attempt in range(5):
             await self.limiter.wait()
@@ -205,18 +249,26 @@ class GeminiClient:
                 delay *= 2
                 continue
 
+            if res.status_code == 404:
+                raise _ModelGone(f"{model}: {res.text[:160]}")
             raise RuntimeError(f"Gemini error {res.status_code}: {res.text[:300]}")
         raise RuntimeError("Gemini retries exhausted")
 
 
-def _build_prompt(principle: dict, passages: list[tuple[str, int, str]]) -> str:
+class _ModelGone(Exception):
+    """The model name is no longer served. Try the next one in the list."""
+
+
+def _build_prompt(principle: dict, passages: list[tuple[str, int, str]],
+                  framework_name: str = "ASX Corporate Governance Council",
+                  unit_name: str = "Principle") -> str:
     criteria_block = "\n".join(
         f'- {c["criterionCode"]}: {c["question"]}' for c in principle["criteria"]
     )
     passage_block = "\n\n".join(
         f"[SOURCE: {title} | PAGE: {page}]\n{text}" for title, page, text in passages
     )
-    return f"""ASX Corporate Governance Council, Principle {principle['number']}:
+    return f"""{framework_name}, {unit_name} {principle['number']}:
 {principle['title']}
 
 Assess each of these criteria against the passages below. Return one finding per
@@ -278,22 +330,23 @@ def keyword_findings(principle: dict, passages: list[tuple[str, int, str]]) -> l
                 "criterionCode": c["criterionCode"], "found": False,
                 "explainedDeparture": False, "maturitySignal": "NONE",
                 "rationale": "No keyword match in retrieved text", "excerpt": "",
-                "page": 0, "confidence": 0.3,
+                "page": 0, "sourceTitle": "", "confidence": 0.3,
             })
             continue
-        page, excerpt = _first_hit(passages, hits[0])
+        title, page, excerpt = _first_hit(passages, hits[0])
         out.append({
             "criterionCode": c["criterionCode"], "found": True,
             "explainedDeparture": False, "maturitySignal": "STATED",
             "rationale": f"Keyword match on {', '.join(hits[:3])}",
-            "excerpt": excerpt, "page": page, "confidence": 0.4,
+            "excerpt": excerpt, "page": page, "sourceTitle": title,
+            "confidence": 0.4,
         })
     return out
 
 
-def _first_hit(passages, keyword: str) -> tuple[int, str]:
-    for _, page, text in passages:
+def _first_hit(passages, keyword: str) -> tuple[str, int, str]:
+    for title, page, text in passages:
         idx = text.lower().find(keyword.lower())
         if idx >= 0:
-            return page, " ".join(text[max(0, idx - 80): idx + 180].split())[:240]
-    return 0, ""
+            return title, page, " ".join(text[max(0, idx - 80): idx + 180].split())[:240]
+    return "", 0, ""

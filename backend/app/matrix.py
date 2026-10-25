@@ -7,8 +7,12 @@ This is the seam with cy0701's ranking matrix. If the matrix shape changes,
 this file changes and nothing else does.
 """
 
+PILLAR = "GOVERNANCE"
+LABEL = "Governance"
 MATRIX_VERSION = "G-4thEd v1.0"
 FRAMEWORK_EDITION = "ASX CGC 4th edition"
+FRAMEWORK_NAME = "ASX Corporate Governance Council Principles and Recommendations"
+UNIT_NAME = "Principle"
 
 # Uniform 0..4 maturity across every criterion. If cy0701's matrix introduces
 # per-criterion scales, add a "scale" key here and normalise in scoring.py.

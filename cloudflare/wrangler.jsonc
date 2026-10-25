@@ -1,0 +1,41 @@
+// One Worker on Cloudflare: it serves the website (frontend/) as static files
+// and forwards /api and /respond to the API, which runs as a container built
+// from backend/Dockerfile. Deploy steps: DEPLOY.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "provisionit-esg",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+
+  // The website. Files are served directly; anything that is not a file
+  // (/api/..., /respond/...) goes to the Worker in src/index.js.
+  "assets": {
+    "directory": "../frontend",
+    "binding": "ASSETS"
+  },
+
+  // The API container. One instance: assessment progress is held in memory.
+  "containers": [
+    {
+      "class_name": "EsgApi",
+      "image": "../backend/Dockerfile",
+      "max_instances": 1,
+      "instance_type": "standard-1"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "class_name": "EsgApi", "name": "ESG_API" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EsgApi"] }],
+
+  // Settings that are not secret. Secrets (DATABASE_URL, JWT_SECRET,
+  // GEMINI_API_KEY, SMTP_PASSWORD...) are set with `npx wrangler secret put`.
+  "vars": {
+    "PUBLIC_BASE_URL": "",
+    "SIGNUP_DOMAINS": "",
+    "JWT_EXPIRE_MINUTES": "480",
+    "GEMINI_MODEL": "gemini-3.6-flash"
+  },
+
+  "observability": { "enabled": true }
+}

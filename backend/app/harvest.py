@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -32,7 +33,21 @@ USER_AGENT = (
 
 # Delay between requests to the same host. Mick's sources are free and public,
 # and hammering them is both discourteous and a fast route to an IP block.
-HOST_DELAY_SECONDS = 1.5
+HOST_DELAY_SECONDS = float(os.getenv("HARVEST_HOST_DELAY", "1.5"))
+
+# The delay protects other people's servers. Our own fixture company on this
+# machine is not one of them, so the offline demo runs at full speed.
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+# Optional pause per local fetch, for recording a demo at a watchable pace.
+# Zero by default; DEMO_PACE=0.8 makes the live source log fill in over ~9 s.
+DEMO_PACE_SECONDS = float(os.getenv("DEMO_PACE", "0"))
+
+
+def is_local(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host in LOCAL_HOSTS or host.endswith(".localhost")
 
 # Link text or href fragments that suggest a governance document.
 DOC_PATTERNS = [
@@ -49,14 +64,26 @@ DOC_PATTERNS = [
     ("diversity_policy", r"diversity[- ](policy|and[- ]inclusion)"),
     ("disclosure_policy", r"continuous[- ]disclosure|disclosure[- ]policy"),
     ("remuneration_report", r"remuneration[- ]report"),
-    ("sustainability_report", r"sustainability[- ]report|esg[- ]report|climate[- ]report"),
+    # Environmental and social documents. Placed before the generic
+    # sustainability report so a climate statement is not filed as one.
+    ("climate_statement", r"climate[- ](statement|disclosure|related[- ]financial)|tcfd|aasb[- ]?s2"),
+    ("modern_slavery_statement", r"modern[- ]slavery"),
+    ("wgea_report", r"wgea|workplace[- ]gender[- ]equality|gender[- ]pay[- ]gap"),
+    ("human_rights_policy", r"human[- ]rights"),
+    ("environmental_policy", r"environment(al)?[- ]policy"),
+    ("supplier_code", r"supplier[- ]code|responsible[- ]sourcing|supplier[- ]conduct"),
+    ("reconciliation_action_plan", r"reconciliation[- ]action[- ]plan"),
+    ("whs_policy", r"(health[- ](and|&)[- ]safety|whs|safety)[- ]policy"),
+    ("privacy_policy", r"privacy[- ](policy|statement)"),
+    ("sustainability_report", r"sustainability[- ]report|esg[- ]report|climate[- ]report|impact[- ]report"),
     ("constitution", r"constitution"),
     ("notice_of_meeting", r"notice[- ]of[- ](annual[- ])?meeting"),
     ("agm_results", r"results[- ]of[- ]meeting|agm[- ]results|voting[- ]results"),
 ]
 
 # Pages likely to link to the documents above.
-HUB_PATTERNS = r"governance|investor|about[- ]us|leadership|board|polic|sustainab|shareholder"
+HUB_PATTERNS = (r"governance|investor|about[- ]us|leadership|board|polic|sustainab|shareholder"
+                r"|esg|climate|environment|responsib|community|people")
 
 
 @dataclass
@@ -140,6 +167,10 @@ class Harvester:
         self.tasks: list[HarvestTask] = []
 
     async def _polite_wait(self, url: str) -> None:
+        if is_local(url):
+            if DEMO_PACE_SECONDS > 0:
+                await asyncio.sleep(DEMO_PACE_SECONDS)
+            return
         host = urlparse(url).netloc
         last = self._last_hit.get(host)
         if last is not None:
@@ -238,16 +269,39 @@ class Harvester:
                             "is_pdf": href.lower().split("?")[0].endswith(".pdf"),
                         }
                     elif depth == 0 and re.search(HUB_PATTERNS, haystack):
-                        if href not in seen_pages and len(next_pages) < 6:
+                        if href not in seen_pages and len(next_pages) < 8:
                             next_pages.append(href)
             pages_to_scan = next_pages
 
         # A PDF of the governance statement beats an HTML page describing it.
         ranked = sorted(
-            found.values(),
+            latest_only(list(found.values())),
             key=lambda d: (not d["is_pdf"], _type_rank(d["source_type"])),
         )
         return ranked[: self.max_docs]
+
+
+_YEAR = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
+
+
+def _year(doc: dict) -> int | None:
+    years = [int(y) for y in _YEAR.findall(f"{doc['title']} {doc['url']}") if 2000 <= int(y) <= 2100]
+    return max(years) if years else None
+
+
+def latest_only(docs: list[dict]) -> list[dict]:
+    """Keep the newest edition of each kind of report. Sites list every year's
+    governance statement, climate report and modern slavery statement; only the
+    current one describes the company as it is, and fetching the archive costs
+    minutes and model calls for nothing. Undated documents (policies, charters)
+    are all kept."""
+    newest: dict[str, int] = {}
+    for d in docs:
+        y = _year(d)
+        if y is not None:
+            newest[d["source_type"]] = max(y, newest.get(d["source_type"], y))
+    return [d for d in docs
+            if _year(d) is None or _year(d) == newest.get(d["source_type"])]
 
 
 def _classify(haystack: str) -> str | None:

@@ -1,0 +1,10 @@
+.venv
+.env
+data
+__pycache__
+*.pyc
+.ruff_cache
+test_*.py
+testkit.py
+testfixtures.py
+tools

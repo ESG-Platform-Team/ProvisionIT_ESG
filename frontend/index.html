@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-<script>window.PROVISION_API_BASE = "http://localhost:8080";</script>
+<script src="./analytics.config.js"></script>
+<script type="module" src="./analytics.js"></script>
+<script>
+  // Local demo (./demo.sh serves this page on 8000 or 8001): the API is on 8080.
+  // Deployed (Cloudflare): the API answers on the same domain as this page.
+  window.PROVISION_API_BASE = ["8000", "8001"].includes(location.port)
+    ? location.protocol + "//" + location.hostname + ":8080" : location.origin;
+</script>
 </head>
 <body>
 <x-dc>
@@ -44,6 +51,12 @@
         </sc-for>
       </div>
       <div style="flex:1"></div>
+      <sc-if value="{{ userChip.on }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:13px;color:#C6CAD4">{{ userChip.name }}</span>
+          <button onClick="{{ doSignOut }}" style="background:transparent;border:none;color:#8A8F9C;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:6px 2px" style-hover="color:#F4BF3F">Sign out</button>
+        </div>
+      </sc-if>
       <button onClick="{{ toggleLive }}" style="display:flex;align-items:center;gap:9px;background:transparent;border:1px solid {{ live.bd }};padding:7px 12px;cursor:pointer;transition:border-color .2s">
         <span style="width:7px;height:7px;border-radius:50%;background:{{ live.dot }}"></span>
         <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ live.fg }}">{{ live.label }}</span>
@@ -51,14 +64,47 @@
     </div>
   </div>
 
+  <!-- ============ SIGN IN ============ -->
+  <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ false }}">
+  <div style="background:radial-gradient(120% 90% at 78% 0%,#20232F 0%,#0E0F14 58%);min-height:calc(100vh - 66px);display:flex;align-items:center;justify-content:center;padding:64px 24px">
+    <div style="width:100%;max-width:440px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:18px">{{ authView.kicker }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:40px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 12px">{{ authView.title }}</h1>
+      <p style="font-size:14.5px;line-height:1.65;color:#9AA0AE;margin:0 0 10px">{{ authView.lede }}</p>
+      <form onSubmit="{{ authSubmit }}" style="background:#0E0F14;border:1px solid #2E323F;padding:8px 28px 28px;margin-top:22px">
+        <sc-if value="{{ authView.signup }}" hint-placeholder-val="{{ false }}">
+          <label for="auth-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Name</label>
+          <input id="auth-name" value="{{ authName }}" onChange="{{ onAuthName }}" autocomplete="name" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
+        </sc-if>
+        <label for="auth-email" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Email</label>
+        <input id="auth-email" type="email" value="{{ authEmail }}" onChange="{{ onAuthEmail }}" autocomplete="email" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
+        <label for="auth-password" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Password</label>
+        <div style="position:relative">
+          <input id="auth-password" type="{{ authView.pwType }}" value="{{ authPassword }}" onChange="{{ onAuthPassword }}" autocomplete="{{ authView.pwComplete }}" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 78px 13px 14px;outline:none">
+          <button type="button" onClick="{{ togglePw }}" aria-label="{{ authView.pwToggleAria }}" aria-pressed="{{ authView.pwShown }}" style="position:absolute;top:50%;right:8px;transform:translateY(-50%);background:transparent;border:none;color:#9AA0AE;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:8px 8px" style-hover="color:#F4BF3F">{{ authView.pwToggle }}</button>
+        </div>
+        <sc-if value="{{ authView.signup }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12px;color:#6A6F7D;margin-top:8px">At least 10 characters.</div>
+        </sc-if>
+        <sc-if value="{{ authView.hasError }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="border-left:3px solid #E5484D;background:rgba(229,72,77,.08);color:#F4C7C8;font-size:13px;line-height:1.5;padding:10px 12px;margin-top:16px">{{ authView.error }}</div>
+        </sc-if>
+        <button type="submit" style="width:100%;margin-top:22px;background:#F4BF3F;border:none;color:#0E0F14;padding:15px 18px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ authView.btnOpacity }}">{{ authView.button }}</button>
+      </form>
+      <button onClick="{{ authSwitch }}" style="margin-top:18px;background:transparent;border:none;color:#9AA0AE;cursor:pointer;font-size:13.5px;padding:4px 0" style-hover="color:#F4BF3F">{{ authView.switchLabel }}</button>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#565C6C;margin-top:26px;line-height:1.8">Companies answering a request never sign in.<br>Their email link is their access.</div>
+    </div>
+  </div>
+  </sc-if>
+
   <!-- ============ SEARCH ============ -->
   <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ true }}">
   <div>
     <div style="background:radial-gradient(120% 90% at 78% 0%,#20232F 0%,#0E0F14 58%);padding:104px 32px 48px;position:relative;overflow:hidden">
       <div style="max-width:960px;margin:0 auto;position:relative">
-        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Governance · ASX listed entities</div>
+        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Environmental · Social · Governance · Listed and private companies</div>
         <h1 data-reveal="1" style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(40px,6.4vw,66px);line-height:.97;letter-spacing:-.012em;text-transform:uppercase;color:#F4F5F7;margin:0 0 22px;max-width:19ch;text-wrap:pretty">Every claim, back to the page it came from</h1>
-        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an Australian listed entity, or paste a company website. We retrieve what is publicly and freely available, assess it against the ASX Corporate Governance Council Principles, and link every finding to the passage it rests on.</p>
+        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an ASX-listed company, or add a private company by its website. We retrieve what is publicly and freely available, assess governance against the ASX Corporate Governance Council Principles and environmental and social disclosure against AASB S2 and Australian reporting regimes, and link every finding to the passage it rests on.</p>
 
         <div data-reveal="1" style="max-width:780px;position:relative">
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -78,13 +124,57 @@
                 </button>
               </sc-for>
               <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
-                <div style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6E7383;line-height:1.7">No stored entity matches. Press Assess to attempt a live retrieval against this name or URL.</div>
+                <div style="padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6E7383;line-height:1.7">{{ noMatchText }}</div>
               </sc-if>
             </div>
           </sc-if>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin:14px 0 34px">{{ fieldNote }}</div>
+          <sc-if value="{{ add.open }}" hint-placeholder-val="{{ false }}">
+            <form onSubmit="{{ addSubmit }}" style="background:#171922;border:1px solid #2E323F;padding:22px 22px 20px;margin:-16px 0 34px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F4BF3F;margin-bottom:6px">Add a company</div>
+              <p style="font-size:13.5px;line-height:1.6;color:#9AA0AE;margin:0 0 18px;max-width:62ch">For a private company, or an ASX company that is not on file yet. Private companies publish less, so this is where requesting documents matters most. We crawl the website you give, then you can email the contact for anything missing.</p>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
+                <div><label for="add-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Company name</label><input id="add-name" value="{{ add.name }}" onChange="{{ onAddName }}" placeholder="Acme Recycling" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-website" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Website</label><input id="add-website" value="{{ add.website }}" onChange="{{ onAddWebsite }}" placeholder="acmerecycling.com.au" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-contact" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Contact email (for requests)</label><input id="add-contact" type="email" value="{{ add.contact }}" onChange="{{ onAddContact }}" placeholder="sustainability@acme.com.au" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-sector" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Sector (optional)</label><input id="add-sector" value="{{ add.sector }}" onChange="{{ onAddSector }}" placeholder="Industrials" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-asx" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">ASX code (only if listed)</label><input id="add-asx" value="{{ add.asx }}" onChange="{{ onAddAsx }}" placeholder="e.g. QAN, empty if private" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+              </div>
+              <sc-if value="{{ add.hasError }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="border-left:3px solid #E5484D;background:rgba(229,72,77,.08);color:#F4C7C8;font-size:13px;padding:10px 12px;margin-top:14px">{{ add.error }}</div>
+              </sc-if>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+                <button type="submit" style="background:#F4BF3F;border:none;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ add.btnOpacity }}">{{ add.button }}</button>
+                <button type="button" onClick="{{ addCancel }}" style="background:transparent;border:1px solid #2E323F;color:#9AA0AE;padding:13px 20px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase" style-hover="color:#F4F5F7">Cancel</button>
+              </div>
+            </form>
+          </sc-if>
         </div>
 
+        <sc-if value="{{ live.on }}" hint-placeholder-val="{{ true }}">
+        <div data-reveal="1" style="margin:-8px 0 34px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Pillars to assess · {{ pillarCount }}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{ pillarChips }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.toggle }}" style="cursor:pointer;padding:9px 18px;border-radius:999px;font-size:12.5px;background:{{ c.bg }};border:1px solid {{ c.bd }};color:{{ c.fg }};transition:all .2s" style-hover="border-color:#F4BF3F">{{ c.name }}</button>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ live.on }}" hint-placeholder-val="{{ true }}">
+        <div data-reveal="1">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Companies on file · {{ onFileCount }}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{ onFile }}" as="c" hint-placeholder-count="6">
+              <button onClick="{{ c.pick }}" title="{{ c.title }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px solid {{ c.bd }};color:#C6CAD4;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4F5F7">{{ c.label }}</button>
+            </sc-for>
+            <button onClick="{{ addOpen }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px dashed #565C6C;color:#F4BF3F;transition:all .2s" style-hover="border-color:#F4BF3F">+ Add a company</button>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ notLive }}" hint-placeholder-val="{{ false }}">
         <div data-reveal="1">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Narrow the profile · {{ chipCount }}</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -93,6 +183,7 @@
             </sc-for>
           </div>
         </div>
+        </sc-if>
       </div>
     </div>
 
@@ -141,7 +232,7 @@
         <span style="width:9px;height:9px;border-radius:50%;background:#F4BF3F;animation:{{ run.anim }}"></span>
         <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#F4BF3F">{{ run.stage }}</span>
       </div>
-      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:46px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 10px">Retrieving sources</h1>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:46px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 10px">{{ run.title }}</h1>
       <div style="font-size:16px;color:#9AA0AE;margin-bottom:6px">{{ run.company }}</div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin-bottom:40px">{{ run.meta }}</div>
 
@@ -183,11 +274,11 @@
         <div>
           <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(34px,5vw,52px);line-height:.98;letter-spacing:-.005em;text-transform:uppercase;color:#F4F5F7;margin:0 0 16px">{{ a.name }}</h1>
           <div style="display:flex;gap:20px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
-            <span>ASX: {{ a.code }}</span><span style="color:#3A3F4E">/</span><span>{{ a.tier }}</span><span style="color:#3A3F4E">/</span><span>{{ a.managed }}</span><span style="color:#3A3F4E">/</span><span>Assessed {{ a.date }}</span><span style="color:#3A3F4E">/</span><span>{{ a.matrix }}</span>
+            <sc-for list="{{ a.metaParts }}" as="m" hint-placeholder-count="5"><span style="color:#3A3F4E;display:{{ m.sepShow }}">/</span><span>{{ m.text }}</span></sc-for>
           </div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6E7383;margin-bottom:8px">Governance band</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6E7383;margin-bottom:8px">{{ a.bandLabel }}</div>
           <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(30px,4.4vw,44px);line-height:1;text-transform:uppercase;color:#F4BF3F;margin-bottom:14px">{{ a.band }}</div>
           <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
             <div style="width:30px;height:30px;border-radius:50%;border:1px solid #565C6C;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#F4F5F7">{{ a.conf }}</div>
@@ -195,6 +286,16 @@
           </div>
         </div>
       </div>
+      <sc-if value="{{ a.hasPillars }}" hint-placeholder-val="{{ true }}">
+      <div style="max-width:1240px;margin:30px auto 0;display:flex;gap:10px;flex-wrap:wrap">
+        <sc-for list="{{ a.pillarTabs }}" as="t" hint-placeholder-count="3">
+          <button onClick="{{ t.go }}" style="background:{{ t.bg }};border:1px solid {{ t.bd }};color:{{ t.fg }};padding:11px 18px;cursor:pointer;display:flex;gap:14px;align-items:baseline;transition:border-color .2s" style-hover="border-color:#F4BF3F">
+            <span style="font-family:Archivo,sans-serif;font-weight:700;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase">{{ t.name }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ t.sub }}">{{ t.band }} · {{ t.conf }}</span>
+          </button>
+        </sc-for>
+      </div>
+      </sc-if>
     </div>
 
     <div style="background:#F4F5F7;padding:0 32px 80px">
@@ -207,6 +308,20 @@
               <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C;line-height:1.6">{{ s.k }}</div>
             </div>
           </sc-for>
+        </div>
+
+        <div style="background:#FDF3D8;border-left:3px solid #F4BF3F;padding:18px 22px;margin:-16px 0 40px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A12;margin-bottom:8px">{{ a.interpTitle }}</div>
+          <div style="font-size:13.5px;line-height:1.65;color:#0E0F14;max-width:118ch">{{ a.interpretation }}</div>
+          <sc-if value="{{ a.hasInterpNote }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;line-height:1.6;color:#4A4E5C;margin-top:8px;max-width:118ch">{{ a.interpNote }}</div>
+          </sc-if>
+          <sc-if value="{{ a.hasDecline }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;line-height:1.6;color:#0E0F14;margin-top:10px;font-weight:600">Not rated: {{ a.declineReason }}</div>
+          </sc-if>
+          <sc-if value="{{ a.isDraft }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A6A12;margin-top:10px">{{ a.draftNote }}</div>
+          </sc-if>
         </div>
 
         <div style="display:grid;grid-template-columns:minmax(340px,1fr) minmax(320px,420px);gap:40px;align-items:start;margin-bottom:56px">
@@ -234,7 +349,7 @@
         </div>
 
         <div data-reveal="1" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:18px">
-          <h2 style="font-family:Archivo,sans-serif;font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;color:#0E0F14;margin:0">The eight principles</h2>
+          <h2 style="font-family:Archivo,sans-serif;font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;color:#0E0F14;margin:0">{{ a.sectionTitle }}</h2>
           <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
             <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
               <div style="display:flex;align-items:center;gap:8px">
@@ -275,6 +390,9 @@
                           </span>
                           <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#A0A5B2">{{ f.note }}</span>
                         </div>
+                        <sc-if value="{{ f.hasReq }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#8A6A12;margin-bottom:10px">{{ f.req }}</div>
+                        </sc-if>
                         <div style="display:flex;gap:8px;flex-wrap:wrap">
                           <sc-for list="{{ f.sources }}" as="s" hint-placeholder-count="2">
                             <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid #DCDEE4;border-radius:999px;background:#fff;transition:border-color .18s,transform .18s" style-hover="border-color:#0E0F14;transform:translateY(-1px)">
@@ -294,10 +412,47 @@
 
         <div data-reveal="1" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:32px">
           <button onClick="{{ exportJson }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Export JSON</button>
-          <button onClick="{{ exportPdf }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Export PDF</button>
+          <button onClick="{{ exportPdf }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">{{ pdfLabel }}</button>
+          <sc-if value="{{ canEmail }}" hint-placeholder-val="{{ true }}">
+            <span style="display:contents">
+            <button onClick="{{ toggleMail }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Email report</button>
+            <button onClick="{{ toggleReq }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Request missing disclosures</button>
+            </span>
+          </sc-if>
           <button onClick="{{ goHistory }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Compare with last assessment</button>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">{{ exportNote }}</span>
         </div>
+
+        <sc-if value="{{ mail.open }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:18px;background:#fff;border:1px solid #DCDEE4;padding:20px 22px;max-width:820px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin-bottom:12px">Email the PDF report, with the JSON result attached</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+              <input value="{{ mail.to }}" onChange="{{ onMailTo }}" placeholder="name@company.com.au, colleague@company.com.au" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none">
+              <button onClick="{{ sendMail }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:12px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">Send report</button>
+            </div>
+            <input value="{{ mail.msg }}" onChange="{{ onMailMsg }}" placeholder="Optional message to include" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none;width:100%">
+            <div style="font-size:12.5px;line-height:1.6;color:#4A4E5C;margin-top:12px">{{ mail.status }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ req.open }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:18px;background:#fff;border:1px solid #DCDEE4;padding:20px 22px;max-width:820px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin-bottom:12px">Ask the company for what public sources did not answer · {{ req.count }}</div>
+            <p style="font-size:13px;line-height:1.65;color:#4A4E5C;margin:0 0 14px">The company receives a list of the unanswered criteria and a secure link to upload documents or decline. Anything supplied is recorded as provided on request and graded below a published document. No answer by the due date is recorded, and those criteria stay as insufficient information rather than scoring zero.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+              <input value="{{ req.email }}" onChange="{{ onReqEmail }}" placeholder="Company secretary or investor relations email" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none">
+              <input value="{{ req.by }}" onChange="{{ onReqBy }}" placeholder="Requested by (your name)" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none">
+            </div>
+            <button onClick="{{ sendReq }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:12px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">Send request</button>
+            <div style="font-size:12.5px;line-height:1.6;color:#4A4E5C;margin-top:12px">{{ req.status }}</div>
+            <sc-if value="{{ req.hasLink }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+                <button onClick="{{ openRespond }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Open the company's response page</button>
+                <button onClick="{{ goRequests }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Track requests</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.8;letter-spacing:.06em;color:#8A8F9C;margin-top:18px;max-width:80ch">Sources were captured on {{ a.date }} and stored with the assessment, so this result can be reproduced exactly as issued.</div>
       </div>
     </div>
@@ -402,21 +557,21 @@
   <!-- ============ INSUFFICIENT EVIDENCE ============ -->
   <sc-if value="{{ isInsufficient }}" hint-placeholder-val="{{ true }}">
   <div style="background:#171922;min-height:calc(100vh - 66px);display:flex;align-items:center;justify-content:center;padding:64px 24px">
-    <div style="width:100%;max-width:620px;background:#0E0F14;border:1px solid #2E323F;padding:44px 44px 38px">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:22px">Result · Insufficient evidence</div>
-      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:36px;line-height:1.05;text-transform:uppercase;color:#F4F5F7;margin:0 0 18px">Not enough evidence to rate</h1>
+    <div style="width:100%;max-width:760px;background:#0E0F14;border:1px solid #2E323F;padding:44px 44px 38px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:22px">{{ ins.kicker }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:36px;line-height:1.05;text-transform:uppercase;color:#F4F5F7;margin:0 0 18px">{{ ins.title }}</h1>
       <p style="font-size:15px;line-height:1.7;color:#9AA0AE;margin:0 0 30px;max-width:56ch">{{ ins.sentence }}</p>
       <div style="border-top:1px solid #2E323F">
         <sc-for list="{{ ins.docs }}" as="d" hint-placeholder-count="5">
           <div style="display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:14px 0;border-bottom:1px solid #22252F">
-            <span style="font-size:14px;color:#E7E8EC">{{ d.name }}</span>
+            <span style="font-size:14px;line-height:1.5;color:#E7E8EC"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A8F9C;margin-right:10px">{{ d.code }}</span>{{ d.name }}<span style="display:block;font-size:12px;color:#8A8F9C;margin-top:4px">{{ d.note }}</span></span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ d.color }};text-align:right;flex:none">{{ d.status }}</span>
           </div>
         </sc-for>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:30px">
-        <button onClick="{{ retry }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">Retry retrieval</button>
-        <button onClick="{{ addSource }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">Add a source manually</button>
+        <button onClick="{{ ins.primary }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">{{ ins.primaryLabel }}</button>
+        <button onClick="{{ ins.secondary }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">{{ ins.secondaryLabel }}</button>
       </div>
       <sc-if value="{{ ins.adding }}" hint-placeholder-val="{{ false }}">
         <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -424,7 +579,187 @@
           <button onClick="{{ submitManual }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:13px 20px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase">Retrieve</button>
         </div>
       </sc-if>
-      <div style="font-size:12.5px;line-height:1.7;color:#565C6C;margin-top:24px">Declining to rate is a result, not a failure. The attempt, its date and the gaps are stored in history.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#565C6C;margin-top:24px">{{ ins.foot }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ DISCLOSURE REQUESTS ============ -->
+  <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#F4F5F7;min-height:calc(100vh - 66px);padding:64px 32px 96px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:16px">Disclosure requests · {{ requestsCount }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:42px;line-height:1;text-transform:uppercase;color:#0E0F14;margin:0 0 12px">Requests</h1>
+      <p style="font-size:14.5px;line-height:1.7;color:#5A5F6D;max-width:66ch;margin:0 0 36px">Information asked for directly from companies where public sources were silent. Every request, answer, refusal and lapse is recorded, so the report always says how a gap came to be. A request with no answer by its due date leaves those criteria as insufficient information; it never scores them as zero.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:22px;align-items:start;margin-bottom:44px">
+        <form onSubmit="{{ rq.submit }}" style="background:#fff;border:1px solid #DCDEE4;padding:26px 26px 24px">
+          <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:20px;text-transform:uppercase;color:#0E0F14">New ESG information request</div>
+          <p style="font-size:13.5px;line-height:1.6;color:#5A5F6D;margin:8px 0 0">Choose the company and the documents you need. The email on the right updates as you go and is exactly what the company receives, with a secure link to upload or decline.</p>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">1 · Company</div>
+          <input id="rq-filter" value="{{ rq.filter }}" onChange="{{ rq.onFilter }}" placeholder="Search companies on file, or paste a website" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit;margin-bottom:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <sc-for list="{{ rq.companies }}" as="c" hint-placeholder-count="6">
+              <button type="button" onClick="{{ c.pick }}" title="{{ c.title }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;line-height:1.3;text-align:left;background:{{ c.bg }};border:1px solid {{ c.bd }};color:{{ c.fg }};transition:all .15s">{{ c.label }}</button>
+            </sc-for>
+            <button type="button" onClick="{{ rq.openAdd }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;background:#fff;border:1px dashed #8A8F9C;color:#8A6A12;font-weight:600">{{ rq.addChip }}</button>
+          </div>
+          <sc-if value="{{ rq.addOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F7F7F9;border:1px solid #DCDEE4;padding:16px;margin-top:12px">
+              <div style="font-size:13px;font-weight:600;color:#0E0F14;margin-bottom:4px">Add a company</div>
+              <div style="font-size:12.5px;color:#5A5F6D;margin-bottom:12px">A private company, or an ASX company not on file. It is saved for future requests and assessments.</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+                <div><label for="rqa-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Company name</label><input id="rqa-name" value="{{ rq.aName }}" onChange="{{ rq.onAName }}" placeholder="Acme Recycling" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+                <div><label for="rqa-website" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Website</label><input id="rqa-website" value="{{ rq.aWebsite }}" onChange="{{ rq.onAWebsite }}" placeholder="acmerecycling.com.au" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+                <div><label for="rqa-contact" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Contact email</label><input id="rqa-contact" type="email" value="{{ rq.aContact }}" onChange="{{ rq.onAContact }}" placeholder="sustainability@acme.com.au" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+                <div><label for="rqa-asx" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">ASX code (only if listed)</label><input id="rqa-asx" value="{{ rq.aAsx }}" onChange="{{ rq.onAAsx }}" placeholder="e.g. QAN, empty if private" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+              </div>
+              <sc-if value="{{ rq.aHasError }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="border-left:3px solid #E5484D;background:#FCE8E6;font-size:13px;padding:9px 12px;margin-top:12px">{{ rq.aError }}</div>
+              </sc-if>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button type="button" onClick="{{ rq.saveAdd }}" style="background:#0E0F14;border:none;color:#F4F5F7;padding:11px 18px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">{{ rq.aButton }}</button>
+                <button type="button" onClick="{{ rq.cancelAdd }}" style="background:transparent;border:1px solid #C6CAD4;color:#4A4E5C;padding:11px 16px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">Cancel</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ rq.noCompanies }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;color:#8A8F9C">{{ rq.emptyText }}</div>
+          </sc-if>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">2 · Who receives it</div>
+          <p style="font-size:13px;line-height:1.6;color:#5A5F6D;margin:-4px 0 12px">The person or inbox at the company that gets the email. Use an address the company publishes, ideally its sustainability, investor relations or company secretary contact.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <button type="button" onClick="{{ rq.findContacts }}" style="background:#fff;border:1px solid #0E0F14;color:#0E0F14;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ rq.findOpacity }}">{{ rq.findLabel }}</button>
+            <span style="font-size:12.5px;color:#6A6F7D">{{ rq.findNote }}</span>
+          </div>
+          <sc-if value="{{ rq.hasFound }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid #DCDEE4;margin-bottom:14px">
+              <sc-for list="{{ rq.found }}" as="f" hint-placeholder-count="3">
+                <button type="button" onClick="{{ f.use }}" style="width:100%;text-align:left;display:flex;gap:12px;align-items:baseline;justify-content:space-between;flex-wrap:wrap;background:{{ f.bg }};border:none;border-bottom:1px solid #EDEEF1;padding:10px 12px;cursor:pointer" style-hover="background:#F7F7F9">
+                  <span><span style="font-size:13.5px;color:#0E0F14;font-weight:600">{{ f.email }}</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ f.roleColor }};margin-left:6px">{{ f.role }}</span></span>
+                  <span style="font-size:11.5px;color:#8A8F9C">{{ f.source }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+            <div><label for="rq-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Contact name</label><input id="rq-name" value="{{ rq.name }}" onChange="{{ rq.onName }}" placeholder="Jo Smith" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+            <div><label for="rq-email" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Contact email</label><input id="rq-email" type="email" value="{{ rq.email }}" onChange="{{ rq.onEmail }}" placeholder="sustainability@company.com.au" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+          </div>
+          <div style="margin-top:12px"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Response due in</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ rq.dues }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.pick }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;line-height:1.3;text-align:left;background:{{ d.bg }};border:1px solid {{ d.bd }};color:{{ d.fg }};transition:all .15s">{{ d.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">3 · Documents to request · {{ rq.docCount }}</div>
+          <sc-for list="{{ rq.groups }}" as="g" hint-placeholder-count="3">
+            <div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px">
+                <span style="font-size:13px;font-weight:600;color:#0E0F14">{{ g.label }}</span>
+                <button type="button" onClick="{{ g.toggleAll }}" style="background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A6A12;padding:2px 0">{{ g.allLabel }}</button>
+              </div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap">
+                <sc-for list="{{ g.docs }}" as="x" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ x.toggle }}" aria-pressed="{{ x.pressed }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;line-height:1.3;text-align:left;background:{{ x.bg }};border:1px solid {{ x.bd }};color:{{ x.fg }};transition:all .15s">{{ x.mark }}{{ x.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ rq.hasGaps }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ rq.toggleGaps }}" aria-pressed="{{ rq.gapsPressed }}" style="display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;background:{{ rq.gapsBg }};border:1px solid {{ rq.gapsBd }};padding:12px 14px;margin-top:4px">
+              <span style="flex:none;width:18px;height:18px;border:1.5px solid #0E0F14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#fff">{{ rq.gapsMark }}</span>
+              <span style="font-size:13.5px;line-height:1.5;color:#0E0F14">{{ rq.gapsLabel }}</span>
+            </button>
+          </sc-if>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">4 · Anything else, and a note</div>
+          <label for="rq-custom" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Other items, one per line</label>
+          <textarea id="rq-custom" value="{{ rq.custom }}" onChange="{{ rq.onCustom }}" placeholder="Your 2025 solar installation figures" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit;min-height:70px;resize:vertical"></textarea>
+          <label for="rq-message" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px;margin-top:12px">Personal note (appears at the top of the email)</label>
+          <textarea id="rq-message" value="{{ rq.message }}" onChange="{{ rq.onMessage }}" placeholder="Thanks for speaking with us last week. As discussed, these are the documents we need." style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit;min-height:70px;resize:vertical"></textarea>
+
+          <sc-if value="{{ rq.hasStatus }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="border-left:3px solid {{ rq.statusBd }};background:{{ rq.statusBg }};font-size:13.5px;line-height:1.55;padding:11px 14px;margin-top:18px;color:#0E0F14">{{ rq.status }}
+              <sc-if value="{{ rq.hasLink }}" hint-placeholder-val="{{ false }}"><br><button type="button" onClick="{{ rq.openLink }}" style="margin-top:8px;background:transparent;border:none;padding:0;cursor:pointer;color:#8A6A12;font-weight:600;font-size:13.5px;text-decoration:underline">Open the company's response page</button></sc-if>
+            </div>
+          </sc-if>
+          <button type="submit" style="width:100%;margin-top:20px;background:#F4BF3F;border:none;color:#0E0F14;padding:15px 18px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ rq.btnOpacity }}">{{ rq.button }}</button>
+        </form>
+
+        <div style="background:#fff;border:1px solid #DCDEE4;position:sticky;top:86px">
+          <div style="background:#0E0F14;border-top:3px solid #F4BF3F;padding:14px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F4BF3F">Email preview</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">{{ rq.previewState }}</span>
+          </div>
+          <div style="padding:16px 20px;border-bottom:1px solid #EDEEF1;font-size:13px;line-height:1.7;color:#4A4E5C">
+            <div><span style="color:#8A8F9C;display:inline-block;width:64px">To</span>{{ rq.pvTo }}</div>
+            <div><span style="color:#8A8F9C;display:inline-block;width:64px">Reply to</span>{{ rq.pvReply }}</div>
+            <div><span style="color:#8A8F9C;display:inline-block;width:64px">Subject</span><b style="color:#0E0F14">{{ rq.pvSubject }}</b></div>
+          </div>
+          <pre style="margin:0;padding:18px 20px 22px;white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.65;color:#22252F;max-height:70vh;overflow:auto">{{ rq.pvText }}</pre>
+        </div>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:14px">Sent requests</div>
+      <div style="background:#fff;border:1px solid #DCDEE4">
+        <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:14px 22px;border-bottom:1px solid #DCDEE4;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
+          <span>Company</span><span>Sent</span><span>Due</span><span>Status</span><span>Items</span><span></span>
+        </div>
+        <sc-for list="{{ requests }}" as="r" hint-placeholder-count="3">
+          <div style="border-bottom:1px solid #EDEEF1;background:{{ r.rowBg }}">
+          <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:16px 22px;align-items:center">
+            <span>
+              <button onClick="{{ r.toggle }}" aria-expanded="{{ r.expanded }}" style="display:block;background:transparent;border:none;padding:0;cursor:pointer;text-align:left;font-size:14px;color:#0E0F14;font-weight:600" style-hover="color:#8A6A12">{{ r.caret }} {{ r.name }}</button>
+              <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#8A8F9C;margin-top:4px">{{ r.code }} · {{ r.contact }}</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.sent }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.due }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ r.color }}">{{ r.status }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.items }}</span>
+            <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+              <sc-if value="{{ r.canOpen }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.open }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Response page</button></sc-if>
+              <sc-if value="{{ r.canOpen }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.close }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Close, no response</button></sc-if>
+              <button onClick="{{ r.toggle }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">{{ r.viewLabel }}</button>
+              <button onClick="{{ r.reassess }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s;background:#F4BF3F;border-color:#F4BF3F" style-hover="background:#E2A61E">Re-assess</button>
+            </span>
+          </div>
+          <sc-if value="{{ r.open2 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;padding:4px 22px 24px">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A12;font-weight:600;margin-bottom:10px">Documents provided · {{ r.docCount }}</div>
+                <sc-for list="{{ r.docs }}" as="d" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border:1px solid #DCDEE4;padding:10px 12px;margin-bottom:8px">
+                    <span><span style="display:block;font-size:13.5px;color:#0E0F14;font-weight:500">{{ d.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8A8F9C">{{ d.meta }}</span></span>
+                    <span style="display:flex;gap:6px;flex:none">
+                      <button onClick="{{ d.view }}" style="background:#0E0F14;border:none;color:#F4F5F7;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase">Open</button>
+                      <button onClick="{{ d.download }}" style="background:transparent;border:1px solid #C6CAD4;color:#4A4E5C;padding:8px 10px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase">Download</button>
+                    </span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ r.noDocs }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#8A8F9C">{{ r.noDocsText }}</div></sc-if>
+                <div style="font-size:12.5px;line-height:1.6;color:#5A5F6D;margin-top:10px">{{ r.respondent }}</div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A12;font-weight:600;margin-bottom:10px">What was requested · {{ r.itemCount }}</div>
+                <sc-for list="{{ r.asked }}" as="a" hint-placeholder-count="4">
+                  <div style="font-size:13px;line-height:1.5;color:#22252F;padding:5px 0;border-bottom:1px dashed #E7E8EC"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8A8F9C;margin-right:8px">{{ a.tag }}</span>{{ a.label }}</div>
+                </sc-for>
+                <div style="font-size:12px;color:#8A8F9C;margin-top:10px">{{ r.timeline }}</div>
+              </div>
+            </div>
+          </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ requestsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px;font-size:13.5px;color:#6A6F7D">No requests yet. Run a live assessment, then use Request missing disclosures on the assessment screen.</div>
+        </sc-if>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C;margin-top:18px">{{ requestsNote }}</div>
     </div>
   </div>
   </sc-if>
@@ -457,7 +792,7 @@
         </sc-for>
       </div>
       <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">
-        <span>MFG assessed twice — Developing C → Established B under a newer matrix</span>
+        <span>{{ historyNote }}</span>
       </div>
     </div>
   </div>
@@ -466,7 +801,7 @@
   <div style="background:#0E0F14;border-top:1px solid #2E323F;padding:28px 32px">
     <div style="max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#565C6C">
       <span>Provision IT · Melbourne · since 2006</span>
-      <span>Free public sources only · bands not scores · every claim linked</span>
+      <span>Free public sources only · machine-formed, stated as such · every claim linked</span>
     </div>
   </div>
 </div>
@@ -531,8 +866,20 @@ const C = [
 // Maps a completed backend assessment onto the exact shape assess() returns, so
 // every screen renders live data without a single component change. If this
 // function is correct, nothing else in the page needs to know the backend exists.
-function assessFromApi(payload) {
-  const res = payload.result || {};
+const PILLAR_ORDER = ["GOVERNANCE", "ENVIRONMENTAL", "SOCIAL"];
+const UNIT_TITLE = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight" };
+
+function pillarOf(payload, key) {
+  const list = payload.pillars && payload.pillars.length ? payload.pillars : [{
+    pillar: "GOVERNANCE", label: "Governance", matrixVersion: payload.matrixVersion,
+    unitName: "Principle", draft: false, result: payload.result, principles: payload.principles
+  }];
+  return list.find(p => p.pillar === key) || list[0];
+}
+
+function assessFromApi(payload, pillarKey) {
+  const pillar = pillarOf(payload, pillarKey);
+  const res = pillar.result || {};
   const counts = res.counts || {};
   const declined = res.band === "INSUFFICIENT_EVIDENCE";
 
@@ -549,7 +896,7 @@ function assessFromApi(payload) {
     INSUFFICIENT_EVIDENCE: "Not rated", DEPARTS_EXPLAINED: "Departs, explained"
   };
 
-  const principles = (payload.principles || []).map(p => {
+  const principles = (pillar.principles || []).map(p => {
     const findings = (p.criteria || []).map(row => {
       const state = STATE[row.status] || "Not retrieved";
       const departs = state === "Departs, explained";
@@ -566,9 +913,12 @@ function assessFromApi(payload) {
         dots: dots(level, departs),
         sources: (row.evidence || []).map(e => ({
           g: e.sourceGrade || "C",
-          loc: e.locator || "location not recorded"
+          loc: (e.locator || "location not recorded")
+            + (e.provenance === "PROVIDED_ON_REQUEST" ? " · provided on request" : "")
         })),
         pillBg: pill.pillBg, pillFg: pill.pillFg, pillBd: pill.pillBd,
+        hasReq: !!row.disclosureRequest,
+        req: row.disclosureRequest ? row.disclosureRequest.note : "",
         level
       };
     });
@@ -604,12 +954,39 @@ function assessFromApi(payload) {
     delay: 0
   }));
 
+  const interp = payload.interpretation || {};
+  const all = payload.pillars && payload.pillars.length ? payload.pillars : [pillar];
+  const unit = (pillar.unitName || "Principle").toLowerCase();
+  const n = principles.length;
+
   return {
     name: payload.company.name,
     code: payload.company.asxCode,
     tier: payload.company.tier || "",
     managed: payload.company.sector || "",
-    matrix: payload.matrixVersion,
+    listed: payload.company.listed !== false,
+    contactEmail: payload.company.contactEmail || "",
+    pillar: pillar.pillar,
+    bandLabel: (pillar.label || "Governance") + " band",
+    sectionTitle: "The " + (UNIT_TITLE[n] || n) + " " + unit + (n === 1 ? "" : "s"),
+    interpTitle: "Machine interpretation",
+    interpretation: interp.statement || "",
+    hasInterpNote: !!interp.note,
+    interpNote: interp.note || "",
+    isDraft: !!pillar.draft,
+    draftNote: pillar.draft ? "Draft matrix " + pillar.matrixVersion + " · criteria and bands are provisional pending review" : "",
+    hasDecline: declined,
+    hasPillars: all.length > 1,
+    pillarTabs: all.map(x => ({
+      key: x.pillar, name: x.label,
+      band: BAND[x.result.band] || "Not rated",
+      conf: x.result.band === "INSUFFICIENT_EVIDENCE" ? "\u2014" : x.result.confidence
+    })),
+    allDeclined: all.every(x => x.result.band === "INSUFFICIENT_EVIDENCE"),
+    requestable: all.reduce((a, x) => a + (x.principles || []).reduce((b, pr) =>
+      b + pr.criteria.filter(r => r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED").length, 0), 0),
+    live: true,
+    matrix: pillar.matrixVersion,
     date: formatDate(payload.completedAt),
     band: BAND[res.band] || "Not rated",
     conf: declined ? "\u2014" : conf,
@@ -621,7 +998,7 @@ function assessFromApi(payload) {
     y: (practice / 4) * 100,
     xRead: declined ? "\u2014" : tPct + "%",
     yRead: declined ? "\u2014" : practice.toFixed(1),
-    stamp: payload.matrixVersion + " \u00b7 live retrieval",
+    stamp: pillar.matrixVersion + " \u00b7 live retrieval",
     stats: [
       { v: String(counts.criteriaInScope || 0), k: "Criteria in scope" },
       { v: String(counts.findingsEvidenced || 0), k: "Findings evidenced" },
@@ -641,7 +1018,11 @@ function assessFromApi(payload) {
         cells: ramp(5, 5 - gradeIdx),
         note: "Primary documents carry grade A, secondary B, website text C. Retrieval failures and scans pull this down." }
     ],
-    retrieval
+    retrieval: retrieval.map(r => Object.assign(r, {
+      status: r.status,
+      mode: (payload.sourceLog || []).find(d => d.title === r.name && d.provenance === "PROVIDED_ON_REQUEST")
+        ? "provided on request" : r.mode
+    }))
   };
 
   function meanLevel(findings) {
@@ -708,6 +1089,8 @@ const SEED_HISTORY = [
   { name: "Torrens Bay Holdings", code: "TBH", date: "14 Aug 2026", band: "Not rated", conf: "—", matrix: "G-4thEd v1.0" },
   { name: "Southern Cross Rail", code: "SXR", date: "29 Jul 2026", band: "Not evidenced", conf: "E", matrix: "G-3rdEd v2.4" }
 ];
+// Bump on every release so browsers never mix a new page with an old cached module.
+const BUILD = "0.7.0";
 const STORE = "provisionit.history.v1";
 
 function bandFor(mean) {
@@ -743,7 +1126,7 @@ function assess(co, retrieval) {
       const p = PILL[state];
       return { id, text, state, note, dots: dots(level, state === "Departs, explained"),
         sources: (sources || []).map(s => ({ g: s[0], loc: s[1] })),
-        pillBg: p.pillBg, pillFg: p.pillFg, pillBd: p.pillBd, level };
+        pillBg: p.pillBg, pillFg: p.pillFg, pillBd: p.pillBd, hasReq: false, req: "", level };
     });
     const scoped = findings.filter(f => f.state !== "Not required");
     const mean = scoped.length ? scoped.reduce((a, f) => a + f.level, 0) / scoped.length : 0;
@@ -766,9 +1149,14 @@ function assess(co, retrieval) {
 
   return {
     name: co.name, code: co.code, tier: co.tier, managed: co.managed, matrix: co.matrix, date: today(),
+    pillar: "GOVERNANCE", bandLabel: "Governance band", sectionTitle: "The eight principles",
+    interpTitle: "Seeded demonstration data",
+    interpretation: "This is a seeded demonstration company. No documents were retrieved and no machine or person assessed it. Switch the toggle to Live backend for a real, machine-formed assessment.",
+    hasInterpNote: false, interpNote: "", isDraft: false, draftNote: "", hasDecline: false,
+    hasPillars: false, pillarTabs: [], allDeclined: retrievalRatio < 0.5, requestable: 0, live: false,
     band, conf, principles, insufficient: retrievalRatio < 0.5,
     x: transparency, y: (practice / 4) * 100, xRead: transparency + "%", yRead: practice.toFixed(1),
-    stamp: co.matrix + " · n=284 peers",
+    stamp: co.matrix + " · illustrative peers",
     stats: [
       { v: String(inScope + notReq), k: "Criteria in scope" },
       { v: String(evidenced), k: "Findings evidenced" },
@@ -790,15 +1178,33 @@ function assess(co, retrieval) {
 
 class Component extends DCLogic {
   state = {
-    screen: "search", query: "", focused: false, live: false, progress: 0,
-    open: { "02": true, "08": true }, chips: { "ASX 300": true, "Internally managed": true },
+    screen: "search", query: "", focused: false, live: true, progress: 0,
+    open: { "01": true, "02": true, "08": true }, chips: { "ASX 300": true, "Internally managed": true },
     log: [], running: false, done: false, current: null, result: null, adding: false, manualUrl: "",
-    history: SEED_HISTORY
+    history: SEED_HISTORY,
+    // Live run payload straight from the API. When present it is the source of
+    // truth and the screens are re-derived from it for whichever pillar is open.
+    payload: null, pillarView: "GOVERNANCE",
+    pillarSel: { GOVERNANCE: true, ENVIRONMENTAL: true, SOCIAL: true },
+    mailOpen: false, mailTo: "", mailMsg: "", mailStatus: "",
+    reqOpen: false, reqEmail: "", reqBy: "", reqStatus: "", reqLink: "",
+    requests: [], requestsNote: "", liveHistory: [],
+    user: null, authMode: "signin", authName: "", authEmail: "", authPassword: "", authError: "", authBusy: false, pwShown: false,
+    liveCompanies: [], addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "", addAsx: "",
+    addError: "", addBusy: false,
+    catalogue: [], rqCode: "", rqName: "", rqEmail: "", rqDue: 21, rqDocs: {}, rqCustom: "", rqMessage: "",
+    rqGaps: false, rqRunId: null, rqGapCount: 0, rqGapDate: "", rqPreview: null, rqPreviewErr: "",
+    rqPreviewBusy: false, rqStatus: "", rqStatusOk: true, rqLink: "", rqBusy: false,
+    rqFilter: "", rqAddOpen: false, rqAName: "", rqAWebsite: "", rqAContact: "", rqAAsx: "", rqAError: "", rqABusy: false,
+    rqFinding: false, rqFound: [], rqFoundNote: "", reqOpenId: null
   };
 
   componentDidMount() {
     Component.mounted = this;
-    import("./scraper.js").then(m => { this._mod = m; }).catch(e => console.error("[provision] scraper load failed", e));
+    this._onSignedOut = () => this.set({ user: null, screen: "signin", authError: "Your session ended. Sign in again." });
+    window.addEventListener("provision:signedout", this._onSignedOut);
+    if (this.state.live) this.checkAuth();
+    import("./scraper.js?v=" + BUILD).then(m => { this._mod = m; }).catch(e => console.error("[provision] scraper load failed", e));
     try {
       const raw = localStorage.getItem(STORE);
       if (raw) this.setState({ history: JSON.parse(raw) });
@@ -844,7 +1250,24 @@ class Component extends DCLogic {
     });
   }
 
-  go(s) { return () => { this.setState({ screen: s, focused: false }); window.scrollTo(0, 0); }; }
+  go(s) {
+    return () => {
+      // In live mode the assessment screens only show a real run. With nothing
+      // assessed yet, send the user to search instead of the seeded example.
+      const st = this.current().state;
+      if (st.live && !st.user && s !== "signin") {
+        this.set({ screen: "signin" });
+        return;
+      }
+      if (st.live && !st.payload && (s === "assessment" || s === "insufficient" || s === "retrieval")
+          && !st.running) {
+        this.setState({ screen: "search", focused: true, searchNote: "Search a company first, for example TST or BEN" });
+      } else {
+        this.setState({ screen: s, focused: false, searchNote: "" });
+      }
+      window.scrollTo(0, 0);
+    };
+  }
 
   resolveCompany(q) {
     const t = q.trim().toLowerCase();
@@ -868,33 +1291,61 @@ class Component extends DCLogic {
   }
 
   // Live run against the FastAPI backend. Same screens, real documents.
+  async api() {
+    return this._api || (this._api = await import("./backend.js?v=" + BUILD));
+  }
+
+  selectedPillars() {
+    const sel = this.current().state.pillarSel;
+    const keys = PILLAR_ORDER.filter(k => sel[k]);
+    return keys.length ? keys : ["GOVERNANCE"];
+  }
+
+  // Everything after a live run completes: history, screens, reset panels.
+  landPayload(payload) {
+    const first = (payload.pillarsRequested && payload.pillarsRequested[0]) || "GOVERNANCE";
+    const result = assessFromApi(payload, first);
+    const record = { name: result.name, code: result.code, date: result.date, runId: payload.runId,
+                     matrix: (payload.pillars || []).map(x => x.matrixVersion).join(" · ") || result.matrix,
+                     band: result.pillarTabs.map(t => t.band).join(" · "),
+                     conf: result.conf };
+    const history = [record].concat(this.current().state.history.filter(h => h.runId !== payload.runId));
+    try { localStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
+    this.set({ running: false, done: true, payload, pillarView: first, result, history,
+               log: result.retrieval, mailOpen: false, mailStatus: "", reqOpen: false,
+               reqStatus: "", reqLink: "", reqEmail: result.contactEmail || "" });
+  }
+
   async runViaApi(query) {
     const id = (this._runId = (this._runId || 0) + 1);
-    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null,
-               current: { name: query, code: query.toUpperCase().slice(0, 4), sources: [] } });
+    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null, payload: null,
+               current: { name: query, code: query.toUpperCase().slice(0, 4), tier: "", sources: [] }, runNote: "" });
     window.scrollTo(0, 0);
     try {
-      const api = this._api || (this._api = await import("./backend.js"));
+      const api = await this.api();
       const matches = await api.searchCompanies(query);
-      if (!matches.length) throw new Error('The backend does not have "' + query + '". Try BEN, BHP or COL.');
+      if (!matches.length) {
+        const looksLikeSite = /^https?:\/\//i.test(query) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(query);
+        this.set({ screen: "search", running: false, addOpen: true, addError: "",
+                   addName: looksLikeSite ? "" : query, addWebsite: looksLikeSite ? query : "",
+                   searchNote: '"' + query + '" is not on file yet. Add it below as a private company.' });
+        return;
+      }
       const co = matches[0];
       if (this._runId !== id) return;
-      this.set({ current: { name: co.name, code: co.asxCode, sources: [] } });
+      this.set({ current: { name: co.name, code: co.asxCode, tier: co.tier || co.sector || "", sources: [] } });
 
       const payload = await api.runAssessment(co.asxCode, p => {
         if (this._runId !== id) return;
-        this.set({ log: api.retrievalRows(p.sourceLog) });
-      });
+        const stageName = { QUEUED: "Starting", HARVEST: "Finding and downloading documents",
+          EXTRACT: "Reading documents", SCORE: "Scoring", AGGREGATE: "Finishing" }[p.stage] || "Working";
+        const last = (p.runLog || []).slice(-1)[0] || "";
+        this.set({ log: api.retrievalRows(p.sourceLog),
+                   runNote: stageName + " · " + Math.round((p.progress || 0) * 100) + "%" +
+                            (last ? " · " + last.slice(0, 70) : "") });
+      }, this.selectedPillars());
       if (this._runId !== id) return;
-
-      const result = assessFromApi(payload);
-      const record = { name: result.name, code: result.code, date: result.date,
-                       matrix: result.matrix,
-                       band: result.insufficient ? "Not rated" : result.band,
-                       conf: result.conf };
-      const history = [record].concat(this.current().state.history);
-      try { localStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
-      this.set({ running: false, done: true, result, history, log: result.retrieval });
+      this.landPayload(payload);
     } catch (err) {
       // Loud rather than silent. A demo that quietly shows seeded data while
       // claiming to be live is worse than one that stops and says why.
@@ -907,11 +1358,11 @@ class Component extends DCLogic {
 
   async run(co) {
     const id = (this._runId = (this._runId || 0) + 1);
-    this.set({ screen: "retrieval", running: true, done: false, log: [], current: co, result: null });
+    this.set({ screen: "retrieval", running: true, done: false, log: [], current: co, result: null, payload: null });
     window.scrollTo(0, 0);
     const out = [];
     try {
-      const mod = this._mod || (this._mod = await import("./scraper.js"));
+      const mod = this._mod || (this._mod = await import("./scraper.js?v=" + BUILD));
       for (const s of co.sources) {
         const r = await mod.fetchSource(s, { live: this.live() });
         if (this._runId !== id) return;
@@ -946,6 +1397,334 @@ class Component extends DCLogic {
     this.set({ running: false, done: true, result, history });
   }
 
+  async sendMail() {
+    const st = this.current().state;
+    if (!st.payload) return;
+    const to = (st.mailTo || "").trim();
+    if (!to) { this.set({ mailStatus: "Enter at least one email address." }); return; }
+    this.set({ mailStatus: "Sending…" });
+    try {
+      const api = await this.api();
+      const out = await api.emailReport(st.payload.runId, to, st.mailMsg || null);
+      this.set({ mailStatus: out.delivered ? "Sent to " + out.to + "." : out.note });
+    } catch (err) {
+      this.set({ mailStatus: "Not sent: " + (err.message || err) });
+    }
+  }
+
+  async sendReq() {
+    const st = this.current().state;
+    if (!st.payload) return;
+    const email = (st.reqEmail || "").trim();
+    if (!email) { this.set({ reqStatus: "Enter the company contact email." }); return; }
+    this.set({ reqStatus: "Sending…", reqLink: "" });
+    try {
+      const api = await this.api();
+      const out = await api.createRequest(st.payload.runId, email, st.reqBy || (st.user && st.user.name) || null, st.payload.pillarsRequested);
+      const d = out.delivery || {};
+      this.set({
+        reqStatus: "Request " + out.requestId + " covers " + out.criteria.length + " criteria, due " +
+          out.dueAt.slice(0, 10) + ". " + (d.delivered ? "Emailed to " + out.contactEmail + "." : d.note),
+        reqLink: out.responseUrl || ""
+      });
+    } catch (err) {
+      this.set({ reqStatus: "Not sent: " + (err.message || err) });
+    }
+  }
+
+  async openRequestForm(prefill) {
+    this.go("requests")();
+    if (prefill) this.set(Object.assign({ rqStatus: "", rqLink: "" }, prefill));
+    await Promise.all([this.loadRequests(), this.loadCatalogue(),
+                       (this.current().state.liveCompanies || []).length ? null : this.loadCompanies()]);
+    this.schedulePreview();
+  }
+
+  async loadCatalogue() {
+    if ((this.current().state.catalogue || []).length) return;
+    try {
+      const api = await this.api();
+      const out = await api.requestCatalogue();
+      this.set({ catalogue: out.documents || [] });
+    } catch (err) { console.error("[provision] catalogue failed", err); }
+  }
+
+  async pickRequestCompany(c) {
+    this.set({ rqFound: [], rqFoundNote: "", rqCode: c.asxCode, rqEmail: c.contactEmail || "", rqRunId: null, rqGaps: false,
+               rqGapCount: 0, rqGapDate: "", rqStatus: "", rqLink: "" });
+    this.schedulePreview();
+    try {
+      const api = await this.api();
+      const runs = await api.listRuns(c.asxCode);
+      if (!runs.length) return;
+      const run = await api.getRun(runs[0].runId);
+      let n = 0;
+      for (const p of run.pillars || []) for (const pr of p.principles) for (const r of pr.criteria)
+        if (r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED") n++;
+      if (this.current().state.rqCode !== c.asxCode) return;
+      this.set({ rqRunId: run.runId, rqGapCount: n, rqGapDate: (run.completedAt || "").slice(0, 10) });
+    } catch (err) { console.error("[provision] latest run lookup failed", err); }
+  }
+
+  async addFromComposer() {
+    const st = this.current().state;
+    if (st.rqABusy) return;
+    if (!st.rqAWebsite.trim()) { this.set({ rqAError: "Enter the company website." }); return; }
+    this.set({ rqABusy: true, rqAError: "" });
+    try {
+      const api = await this.api();
+      const co = await api.addCompany(st.rqAName, st.rqAWebsite, st.rqAContact, "", st.rqAAsx);
+      this.set({ rqABusy: false, rqAddOpen: false, rqAName: "", rqAWebsite: "", rqAContact: "", rqAAsx: "", rqFilter: "" });
+      await this.loadCompanies();
+      this.pickRequestCompany(co);
+    } catch (err) {
+      this.set({ rqABusy: false, rqAError: (err && err.message) || "Could not add the company" });
+    }
+  }
+
+  async findCompanyContacts() {
+    const st = this.current().state;
+    if (!st.rqCode || st.rqFinding) return;
+    this.set({ rqFinding: true, rqFound: [], rqFoundNote: "Reading the company's website…" });
+    try {
+      const api = await this.api();
+      const out = await api.findContacts(st.rqCode);
+      if (this.current().state.rqCode !== st.rqCode) return;
+      this.set({ rqFinding: false, rqFound: out.contacts || [],
+                 rqFoundNote: (out.contacts || []).length
+                   ? (out.contacts.length + " published address" + (out.contacts.length === 1 ? "" : "es") + " on " + out.pagesChecked + " pages. Click one to use it.")
+                   : "No published addresses found on " + out.pagesChecked + " pages. Look on the company's contact page or annual report." });
+    } catch (err) {
+      this.set({ rqFinding: false, rqFoundNote: (err && err.message) || "Could not read the website" });
+    }
+  }
+
+  requestForm() {
+    const st = this.current().state;
+    return {
+      companyCode: st.rqCode, contactName: st.rqName, contactEmail: st.rqEmail,
+      documents: Object.keys(st.rqDocs).filter(k => st.rqDocs[k]),
+      custom: (st.rqCustom || "").split("\n").map(x => x.trim()).filter(Boolean),
+      message: st.rqMessage, dueDays: st.rqDue,
+      runId: st.rqGaps ? st.rqRunId : null, includeGaps: !!(st.rqGaps && st.rqRunId)
+    };
+  }
+
+  schedulePreview() {
+    clearTimeout(this._pvTimer);
+    this._pvTimer = setTimeout(() => this.refreshPreview(), 300);
+  }
+
+  async refreshPreview() {
+    const form = this.requestForm();
+    if (!form.companyCode) { this.set({ rqPreview: null, rqPreviewErr: "Choose a company to start." }); return; }
+    const ticket = (this._pvTicket = (this._pvTicket || 0) + 1);
+    this.set({ rqPreviewBusy: true });
+    try {
+      const api = await this.api();
+      const pv = await api.previewRequest(form);
+      if (ticket !== this._pvTicket) return;
+      this.set({ rqPreview: pv, rqPreviewErr: "", rqPreviewBusy: false });
+    } catch (err) {
+      if (ticket !== this._pvTicket) return;
+      this.set({ rqPreview: null, rqPreviewErr: (err && err.message) || "Preview unavailable", rqPreviewBusy: false });
+    }
+  }
+
+  async submitRequestForm() {
+    const st = this.current().state;
+    if (st.rqBusy) return;
+    const form = this.requestForm();
+    if (!form.companyCode) { this.set({ rqStatus: "Choose a company first.", rqStatusOk: false }); return; }
+    if (!form.contactEmail.trim()) { this.set({ rqStatus: "Enter the contact email.", rqStatusOk: false }); return; }
+    this.set({ rqBusy: true, rqStatus: "Sending…", rqStatusOk: true, rqLink: "" });
+    try {
+      const api = await this.api();
+      const out = await api.sendRequestForm(form);
+      const d = out.delivery || {};
+      this.set({
+        rqBusy: false, rqStatusOk: !!d.delivered || !d.error,
+        rqStatus: (d.delivered ? "Sent to " + out.contactEmail : "Saved, not emailed: " + (d.note || "")) +
+          ". " + out.itemCount + " items, response due " + out.dueAt.slice(0, 10) + ". Reference " + out.requestId + ".",
+        rqLink: out.responseUrl || "", rqDocs: {}, rqCustom: "", rqMessage: "", rqGaps: false
+      });
+      this.loadRequests();
+      this.schedulePreview();
+    } catch (err) {
+      this.set({ rqBusy: false, rqStatus: (err && err.message) || "Could not send the request", rqStatusOk: false });
+    }
+  }
+
+  async loadRequests() {
+    if (!this.live()) { this.set({ requests: [], requestsNote: "Requests need the live backend." }); return; }
+    try {
+      const api = await this.api();
+      this.set({ requests: await api.listRequests(), requestsNote: "" });
+    } catch (err) {
+      this.set({ requestsNote: "Could not load requests: " + (err.message || err) });
+    }
+  }
+
+  async closeReq(id) {
+    try {
+      const api = await this.api();
+      await api.closeRequest(id);
+      await this.loadRequests();
+    } catch (err) { this.set({ requestsNote: "Could not close: " + (err.message || err) }); }
+  }
+
+  async reassessReq(r) {
+    const id = (this._runId = (this._runId || 0) + 1);
+    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null, payload: null,
+               current: { name: r.company.name, code: r.company.asxCode, tier: "re-assessment", sources: [] } });
+    window.scrollTo(0, 0);
+    try {
+      const api = await this.api();
+      const payload = await api.reassess(r.requestId, p => {
+        if (this._runId !== id) return;
+        this.set({ log: api.retrievalRows(p.sourceLog) });
+      });
+      if (this._runId !== id) return;
+      this.landPayload(payload);
+    } catch (err) {
+      this.set({ running: false });
+      alert("Re-assessment failed.\n\n" + (err.message || err));
+    }
+  }
+
+  async checkAuth() {
+    try {
+      const api = await this.api();
+      const user = await api.me();
+      if (user) {
+        this.set({ user, screen: this.current().state.screen === "signin" ? "search" : this.current().state.screen });
+        this.loadCompanies();
+      }
+      else this.set({ user: null, screen: "signin" });
+    } catch (e) {
+      this.set({ user: null, screen: "signin" });
+    }
+  }
+
+  async submitAuth() {
+    const st = this.current().state;
+    if (st.authBusy) return;
+    this.set({ authBusy: true, authError: "" });
+    try {
+      const api = await this.api();
+      const user = st.authMode === "signup"
+        ? await api.signUp(st.authName, st.authEmail, st.authPassword)
+        : await api.signIn(st.authEmail, st.authPassword);
+      this.set({ user, authPassword: "", authBusy: false, pwShown: false, screen: "search" });
+      this.loadCompanies();
+    } catch (err) {
+      this.set({ authBusy: false, authError: (err && err.message) || "Could not sign in" });
+    }
+  }
+
+  async signOut() {
+    const api = await this.api();
+    await api.signOut();
+    this.set({ user: null, payload: null, result: null, liveHistory: [], requests: [],
+               screen: "signin", authPassword: "", authError: "" });
+  }
+
+  async loadCompanies() {
+    try {
+      const api = await this.api();
+      this.set({ liveCompanies: await api.listCompanies() });
+    } catch (err) {
+      console.error("[provision] company list failed", err);
+    }
+  }
+
+  async submitAddCompany() {
+    const st = this.current().state;
+    if (st.addBusy) return;
+    if (!st.addWebsite.trim()) { this.set({ addError: "Enter the company website." }); return; }
+    this.set({ addBusy: true, addError: "" });
+    try {
+      const api = await this.api();
+      const co = await api.addCompany(st.addName, st.addWebsite, st.addContact, st.addSector, st.addAsx);
+      this.set({ addBusy: false, addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "", addAsx: "",
+                 query: co.name, searchNote: "" });
+      await this.loadCompanies();
+      this.runViaApi(co.asxCode);
+    } catch (err) {
+      this.set({ addBusy: false, addError: (err && err.message) || "Could not add the company" });
+    }
+  }
+
+  async loadHistory() {
+    if (!this.live()) return;
+    try {
+      const api = await this.api();
+      const runs = await api.listRuns();
+      const title = b => (b || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      this.set({ liveHistory: runs.map(r => ({
+        runId: r.runId, name: r.company.name, code: r.company.asxCode + (r.requestedBy ? " · run by " + r.requestedBy : ""),
+        date: (r.completedAt || "").slice(0, 10),
+        band: r.pillars.map(p => p.pillar[0] + " " + title(p.band)).join(" · "),
+        conf: (r.pillars[0] && r.pillars[0].confidence) || "\u2014",
+        matrix: r.pillars.map(p => p.matrixVersion).join(" · ")
+      })) });
+    } catch (err) {
+      console.error("[provision] history load failed", err);
+    }
+  }
+
+  // The live Insufficient screen: every criterion public sources did not
+  // answer, across all pillars, with what has been done about it.
+  liveInsufficient(st, a) {
+    const p = st.payload;
+    const declined = (p.pillars || []).filter(x => x.result.band === "INSUFFICIENT_EVIDENCE");
+    const rows = [];
+    for (const pl of p.pillars || []) {
+      for (const pr of pl.principles) {
+        for (const r of pr.criteria) {
+          if (r.status !== "EVIDENCE_GAP" && r.status !== "NOT_DISCLOSED") continue;
+          rows.push({
+            code: r.criterionCode, name: r.question,
+            note: (r.disclosureRequest && r.disclosureRequest.note) || (pl.label + " · " +
+              (r.status === "EVIDENCE_GAP" ? "the source that would answer this was not retrieved" : "not found in the retrieved documents")),
+            status: r.status === "EVIDENCE_GAP" ? "Not retrieved" : "Not disclosed",
+            color: r.status === "EVIDENCE_GAP" ? "#F4BF3F" : "#9AA0AE"
+          });
+        }
+      }
+    }
+    const name = p.company.name;
+    const openReq = () => {
+      let n = 0;
+      for (const pl of p.pillars || []) for (const pr of pl.principles) for (const r of pr.criteria)
+        if (r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED") n++;
+      this.openRequestForm({ rqCode: p.company.asxCode, rqEmail: p.company.contactEmail || "",
+        rqRunId: p.runId, rqGaps: n > 0, rqGapCount: n, rqGapDate: (p.completedAt || "").slice(0, 10) });
+    };
+    return {
+      kicker: "Insufficient information · " + rows.length + " criteria",
+      title: declined.length ? "Not enough evidence to rate " + declined.map(x => x.label).join(", ") : "What public sources did not answer",
+      sentence: (declined.length ? declined.map(x => x.result.declineReason).filter(Boolean).join(" ") + " " : "") +
+        (rows.length ? "These are the criteria " + name + "'s published documents did not answer. They are reported as insufficient information, never as a zero, and can be requested from the company directly."
+          : "Public sources answered every criterion in scope for " + name + "."),
+      docs: rows, adding: false, url: "",
+      primary: openReq, primaryLabel: "Request missing disclosures",
+      secondary: () => this.openRequestForm(), secondaryLabel: "Track requests",
+      foot: "Insufficient information describes what was available to us, not a finding against the company. Declining to rate is a result, not a failure."
+    };
+  }
+
+  async reopen(h) {
+    try {
+      const api = await this.api();
+      const payload = await api.getRun(h.runId);
+      this.landPayload(payload);
+      this.go("assessment")();
+    } catch (err) {
+      alert("Could not load that run.\n\n" + (err.message || err));
+    }
+  }
+
   // The DC runtime can hand rendering to a fresh logic instance mid-run; route all
   // state writes through whichever instance is currently mounted.
   current() { return Component.mounted || this; }
@@ -954,12 +1733,16 @@ class Component extends DCLogic {
 
   renderVals() {
     const st = this.state, sc = st.screen;
-    const result = st.result || assess(COMPANIES.MFG, COMPANIES.MFG.sources);
+    const result = st.payload ? assessFromApi(st.payload, st.pillarView)
+      : (st.result || assess(COMPANIES.MFG, COMPANIES.MFG.sources));
     const a = result;
     const tab = (name, key) => ({ name, go: this.go(key), line: sc === key ? AMB : "transparent", color: sc === key ? "#F4F5F7" : "#8A8F9C" });
 
     const q = st.query.trim().toLowerCase();
     const chipOn = n => !!st.chips[n];
+    const liveMatches = (st.liveCompanies || []).filter(c => !q ||
+      c.name.toLowerCase().includes(q) || c.asxCode.toLowerCase().includes(q) ||
+      (c.website || "").toLowerCase().includes(q));
     const matches = Object.values(COMPANIES).filter(c => {
       if (q && !(c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))) return false;
       if (chipOn("Listed 3+ years") && c.years < 3) return false;
@@ -981,7 +1764,9 @@ class Component extends DCLogic {
         timing: (s.ms || 0) + " ms · " + (s.bytes ? (s.bytes / 1000).toFixed(1) + " kB" : s.mode),
         anim: "pi-fade .4s ease" };
     });
-    const total = st.current ? st.current.sources.length : 13;
+    // Live runs do not know how many documents exist until discovery finishes,
+    // so the total is whatever has been logged so far.
+    const total = Math.max(1, st.current && st.current.sources.length ? st.current.sources.length : st.log.length);
     const retrievedN = st.log.filter(s => s.status === "retrieved" || s.status === "scan").length;
 
     const insDocs = (st.result ? st.result.retrieval : COMPANIES.TBH.sources).map(d => {
@@ -991,30 +1776,92 @@ class Component extends DCLogic {
 
     return {
       progress: st.progress,
-      tabs: [tab("Search","search"), tab("Retrieval","retrieval"), tab("Assessment","assessment"),
-             tab("Insufficient","insufficient"), tab("History","history")],
+      tabs: sc === "signin" ? [] : [tab("Search","search"), tab("Retrieval","retrieval"), tab("Assessment","assessment"),
+             tab("Insufficient","insufficient"), Object.assign(tab("History","history"), { go: () => { this.go("history")(); this.loadHistory(); } }),
+             Object.assign(tab("Requests","requests"), { go: () => this.openRequestForm() })],
       isSearch: sc === "search", isRetrieval: sc === "retrieval", isAssessment: sc === "assessment",
       isMobile: sc === "mobile", isInsufficient: sc === "insufficient", isHistory: sc === "history",
-      goSearch: this.go("search"), goHistory: this.go("history"),
-      peerField: this.props.showPeerField ?? true,
+      isRequests: sc === "requests", isSignin: sc === "signin",
+      userChip: { on: !!(st.live && st.user), name: st.user ? st.user.name : "" },
+      doSignOut: () => this.signOut(),
+      authName: st.authName, authEmail: st.authEmail, authPassword: st.authPassword,
+      onAuthName: e => this.setState({ authName: e.target.value }),
+      onAuthEmail: e => this.setState({ authEmail: e.target.value }),
+      onAuthPassword: e => this.setState({ authPassword: e.target.value }),
+      authSubmit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitAuth(); },
+      authSwitch: () => this.setState(s => ({ authMode: s.authMode === "signup" ? "signin" : "signup", authError: "" })),
+      togglePw: () => this.setState(s => ({ pwShown: !s.pwShown })),
+      authView: st.authMode === "signup"
+        ? { signup: true, kicker: "Provision IT · ESG platform", title: "Create account",
+            lede: "For Provision IT analysts and the project team. Your name goes on every report you email and every request you send.",
+            button: st.authBusy ? "Creating account…" : "Create account", switchLabel: "Already have an account? Sign in",
+            pwComplete: "new-password", pwType: st.pwShown ? "text" : "password", pwShown: st.pwShown ? "true" : "false",
+            pwToggle: st.pwShown ? "Hide" : "Show", pwToggleAria: st.pwShown ? "Hide password" : "Show password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 }
+        : { signup: false, kicker: "Provision IT · ESG platform", title: "Sign in",
+            lede: "Sign in to run assessments, email reports and request missing disclosures from companies.",
+            button: st.authBusy ? "Signing in…" : "Sign in", switchLabel: "New here? Create an account",
+            pwComplete: "current-password", pwType: st.pwShown ? "text" : "password", pwShown: st.pwShown ? "true" : "false",
+            pwToggle: st.pwShown ? "Hide" : "Show", pwToggleAria: st.pwShown ? "Hide password" : "Show password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 },
+      goSearch: this.go("search"), goHistory: () => { this.go("history")(); this.loadHistory(); },
+      goRequests: () => this.openRequestForm(),
+      peerField: st.payload ? false : (this.props.showPeerField ?? true),
 
       live: st.live
-        ? { label: "Live backend on", dot: AMB, bd: AMB, fg: AMB }
-        : { label: "Seeded demo data", dot: "#565C6C", bd: "#2E323F", fg: "#8A8F9C" },
-      toggleLive: () => this.setState(s => ({ live: !s.live })),
+        ? { on: true, label: "Live backend on", dot: AMB, bd: AMB, fg: AMB }
+        : { on: false, label: "Seeded demo data", dot: "#565C6C", bd: "#2E323F", fg: "#8A8F9C" },
+      pillarChips: PILLAR_ORDER.map(k => {
+        const on = !!st.pillarSel[k];
+        const name = k.charAt(0) + k.slice(1).toLowerCase();
+        return { name, bg: on ? AMB : "transparent", bd: on ? AMB : "#2E323F", fg: on ? INK : "#9AA0AE",
+          toggle: () => this.setState(s => ({ pillarSel: Object.assign({}, s.pillarSel, { [k]: !s.pillarSel[k] }) })) };
+      }),
+      pillarCount: (() => {
+        const n = PILLAR_ORDER.filter(k => st.pillarSel[k]).length;
+        return n === 0 ? "none chosen, governance will run" : n + " of 3 · one harvest feeds all of them";
+      })(),
+      toggleLive: () => {
+        const goingLive = !st.live;
+        this.setState({ live: goingLive, screen: goingLive ? st.screen : (st.screen === "signin" ? "search" : st.screen) });
+        if (goingLive) this.checkAuth();
+      },
 
       query: st.query,
       onQuery: e => this.setState({ query: e.target.value, focused: true }),
       onFocus: () => this.setState({ focused: true }),
       onKey: e => { if (e.key === "Enter") this.assessNow(); },
-      hintCode: matches.length === 1 ? matches[0].code : (q ? String(matches.length) : ""),
+      hintCode: st.live ? (liveMatches.length === 1 && q ? liveMatches[0].asxCode : "")
+        : (matches.length === 1 ? matches[0].code : (q ? String(matches.length) : "")),
       fieldNote: st.live
-        ? "Live mode · the backend harvests and assesses this company for real"
+        ? (st.searchNote || "Live mode · the backend harvests and assesses this company for real")
         : "Company name or ASX code · free public sources only",
       field: { bd: st.focused ? "#565C6C" : "#2E323F" },
       showSuggest: st.focused && st.query.length > 0,
-      noMatch: st.focused && st.query.length > 0 && matches.length === 0,
-      suggestions: matches.map(c => ({
+      noMatch: st.focused && st.query.length > 0 && (st.live ? liveMatches.length === 0 : matches.length === 0),
+      noMatchText: st.live ? "Not on file. Press Assess to add it as a private company."
+        : "No stored entity matches. Press Assess to attempt a live retrieval against this name or URL.",
+      notLive: !st.live,
+      onFile: (st.liveCompanies || []).map(c => ({
+        label: c.listed === false ? c.name + " · private" : c.asxCode,
+        title: c.name + (c.website ? " · " + c.website : ""),
+        bd: c.listed === false ? "#565C6C" : "#2E323F",
+        pick: () => { this.setState({ query: c.name, focused: false }); this.runViaApi(c.asxCode); }
+      })),
+      onFileCount: (st.liveCompanies || []).length + " · " + (st.liveCompanies || []).filter(c => c.listed === false).length + " private",
+      addOpen: () => this.setState({ addOpen: true, addError: "" }),
+      addCancel: () => this.setState({ addOpen: false, addError: "", searchNote: "" }),
+      addSubmit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitAddCompany(); },
+      onAddName: e => this.setState({ addName: e.target.value }),
+      onAddWebsite: e => this.setState({ addWebsite: e.target.value }),
+      onAddContact: e => this.setState({ addContact: e.target.value }),
+      onAddSector: e => this.setState({ addSector: e.target.value }),
+      onAddAsx: e => this.setState({ addAsx: e.target.value }),
+      add: { open: !!(st.live && st.addOpen), name: st.addName, website: st.addWebsite, contact: st.addContact,
+             sector: st.addSector, asx: st.addAsx, error: st.addError, hasError: !!st.addError,
+             button: st.addBusy ? "Adding…" : "Add and assess", btnOpacity: st.addBusy ? .6 : 1 },
+      suggestions: st.live ? liveMatches.map(c => ({
+        name: c.name, meta: c.asxCode + " · " + (c.listed === false ? "Private" : (c.tier || "")),
+        pick: () => { this.setState({ query: c.name, focused: false }); this.runViaApi(c.asxCode); }
+      })) : matches.map(c => ({
         name: c.name, meta: c.code + " · " + c.tier,
         pick: () => { this.setState({ query: c.name, focused: false }); this.run(c); }
       })),
@@ -1029,18 +1876,30 @@ class Component extends DCLogic {
       log,
       run: {
         company: st.current ? st.current.name : "—",
-        meta: (st.current ? st.current.code + " · " + st.current.tier : "") + " · " + today(),
+        meta: (st.current ? [st.current.code, st.current.tier].filter(Boolean).join(" · ") : "") + " · " + today(),
         stage: st.running ? "Step 2 of 3 · live source log" : (st.done ? "Retrieval complete" : "Idle"),
+        title: st.done && !st.running ? "Sources retrieved" : "Retrieving sources",
         anim: st.running ? "pi-ping 1.4s ease-out infinite" : "none",
         pct: Math.round((st.log.length / total) * 100),
         count: retrievedN + " of " + total + " retrieved",
-        mode: st.live ? "live fetch · r.jina.ai reader" : "stored capture · replayed with timings",
+        mode: st.live ? (st.running && st.runNote ? st.runNote : "live fetch · company website") : "stored capture · replayed with timings",
         done: st.done,
-        cta: st.result && st.result.insufficient ? "See why we declined" : "Open assessment"
+        cta: (st.payload ? a.allDeclined : (st.result && st.result.insufficient)) ? "See why we declined" : "Open assessment"
       },
-      openResult: () => this.go(st.result && st.result.insufficient ? "insufficient" : "assessment")(),
+      openResult: () => this.go((st.payload ? a.allDeclined : (st.result && st.result.insufficient)) ? "insufficient" : "assessment")(),
 
       a: Object.assign({}, a, {
+        metaParts: [a.listed === false ? "Private company" : "ASX: " + a.code,
+                    a.listed === false ? "" : a.tier, a.managed, "Assessed " + a.date, a.matrix]
+          .filter(Boolean).map((text, i) => ({ text, sepShow: i ? "inline" : "none" })),
+        pillarTabs: (a.pillarTabs || []).map(t => {
+          const on = t.key === (st.payload ? st.pillarView : "GOVERNANCE");
+          return Object.assign({}, t, {
+            go: () => this.setState({ pillarView: t.key, open: { "01": true, "02": true } }),
+            bg: on ? AMB : "transparent", bd: on ? AMB : "#2E323F", fg: on ? INK : "#E7E8EC",
+            sub: on ? DEEP : "#8A8F9C"
+          });
+        }),
         principles: a.principles.map(p => {
           const open = (this.props.expandAll ?? false) || !!st.open[p.n];
           return Object.assign({}, p, { open, caret: open ? "–" : "+",
@@ -1054,19 +1913,185 @@ class Component extends DCLogic {
         { name: "Not retrieved", bg: "transparent", bd: "#8A8F9C", style: "dotted" }
       ],
       exportJson: () => {
-        const blob = new Blob([JSON.stringify(a, (k, v) => (typeof v === "function" ? undefined : v), 2)], { type: "application/json" });
+        // Live runs export the API payload itself, the machine-readable result a
+        // downstream platform would consume. Seeded runs export the screen model.
+        const data = st.payload || a;
+        const blob = new Blob([JSON.stringify(data, (k, v) => (typeof v === "function" ? undefined : v), 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = url; link.download = a.code + "-governance-" + a.date.replace(/ /g, "-") + ".json";
+        link.href = url; link.download = a.code + "-esg-" + a.date.replace(/ /g, "-") + ".json";
         document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
       },
-      exportPdf: () => window.print(),
+      exportPdf: async () => {
+        if (!st.payload) { window.print(); return; }
+        const api = await this.api();
+        try {
+          await api.openReport(st.payload.runId, st.payload.company.asxCode + "-esg-assessment-" +
+            (st.payload.completedAt || "").slice(0, 10) + ".pdf");
+        } catch (err) { alert("Could not download the report.\n\n" + (err.message || err)); }
+      },
+      pdfLabel: st.payload ? "Download PDF report" : "Print / save PDF",
+      canEmail: !!st.payload,
+      mail: { open: st.mailOpen, to: st.mailTo, msg: st.mailMsg, status: st.mailStatus },
+      toggleMail: () => this.setState(s => ({ mailOpen: !s.mailOpen, reqOpen: false })),
+      onMailTo: e => this.setState({ mailTo: e.target.value }),
+      onMailMsg: e => this.setState({ mailMsg: e.target.value }),
+      sendMail: () => this.sendMail(),
+      req: { open: st.reqOpen, email: st.reqEmail, by: st.reqBy || (st.user ? st.user.name : ""), status: st.reqStatus,
+             hasLink: !!st.reqLink, count: (a.requestable || 0) + " unanswered criteria across the assessed pillars" },
+      toggleReq: () => {
+        const p = st.payload;
+        if (!p) return;
+        let n = 0;
+        for (const pl of p.pillars || []) for (const pr of pl.principles) for (const r of pr.criteria)
+          if (r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED") n++;
+        this.openRequestForm({ rqCode: p.company.asxCode, rqEmail: p.company.contactEmail || "",
+          rqRunId: p.runId, rqGaps: n > 0, rqGapCount: n, rqGapDate: (p.completedAt || "").slice(0, 10) });
+      },
+      onReqEmail: e => this.setState({ reqEmail: e.target.value }),
+      onReqBy: e => this.setState({ reqBy: e.target.value }),
+      sendReq: () => this.sendReq(),
+      openRespond: () => { if (st.reqLink) window.open(st.reqLink, "_blank"); },
+
+      requests: st.requests.map(r => {
+        const label = { SENT: r.delivered ? "Awaiting response" : "Saved, not emailed",
+          RESPONDED: "Responded", DECLINED: "Declined", NO_RESPONSE: "No response" }[r.status] || r.status;
+        return {
+          name: r.company.name, code: r.company.asxCode, contact: r.contactEmail,
+          sent: (r.sentAt || "").slice(0, 10), due: (r.dueAt || "").slice(0, 10),
+          status: label + (r.documentsProvided ? " · " + r.documentsProvided + " docs" : ""),
+          color: r.status === "RESPONDED" ? INK : (r.status === "SENT" ? DEEP : "#8A8F9C"),
+          items: (r.itemCount || r.criteria.length) + " · " + r.pillars.map(x => x[0]).join(" "),
+          canOpen: r.status === "SENT" && !!r.responseUrl,
+          open: () => window.open(r.responseUrl, "_blank"),
+          close: () => this.closeReq(r.requestId),
+          reassess: () => this.reassessReq(r),
+          toggle: () => this.setState(s => ({ reqOpenId: s.reqOpenId === r.requestId ? null : r.requestId })),
+          open2: st.reqOpenId === r.requestId, expanded: st.reqOpenId === r.requestId ? "true" : "false",
+          caret: st.reqOpenId === r.requestId ? "\u25be" : "\u25b8",
+          viewLabel: st.reqOpenId === r.requestId ? "Hide" : (r.documentsProvided ? "View documents" : "Details"),
+          rowBg: st.reqOpenId === r.requestId ? "#FAFAFB" : "#fff",
+          docs: ((r.response || {}).documents || []).map(d => ({
+            title: d.title.replace(/ \(provided on request\)$/, ""),
+            meta: (d.file || "") + " \u00b7 " + (d.bytes > 1048576 ? (d.bytes / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(d.bytes / 1024)) + " KB"),
+            view: async () => { try { const api = await this.api(); await api.openRequestDocument(r.requestId, d.index, false); } catch (e) { alert(e.message || e); } },
+            download: async () => { try { const api = await this.api(); await api.openRequestDocument(r.requestId, d.index, true); } catch (e) { alert(e.message || e); } }
+          })),
+          docCount: ((r.response || {}).documents || []).length,
+          noDocs: !((r.response || {}).documents || []).length,
+          noDocsText: r.status === "DECLINED" ? "The company declined" + ((r.response || {}).declineReason ? ": \u201c" + r.response.declineReason + "\u201d" : ".")
+            : r.status === "NO_RESPONSE" ? "No response by the due date, so these items are reported as insufficient information."
+            : "Nothing received yet.",
+          respondent: (r.response && (r.response.respondentName || r.response.respondentEmail))
+            ? "Sent by " + [r.response.respondentName, r.response.respondentEmail].filter(Boolean).join(", ") + (r.respondedAt ? " on " + r.respondedAt.slice(0, 10) : "") : "",
+          itemCount: (r.items || []).length,
+          asked: (r.items || []).map(i => ({ tag: i.kind === "document" ? (i.pillar || "")[0] : i.kind === "custom" ? "+" : i.criterionCode, label: i.label || i.question })),
+          timeline: "Sent " + (r.sentAt || "").slice(0, 10) + (r.requestedBy ? " by " + r.requestedBy : "") + " to " + (r.contactName ? r.contactName + ", " : "") + r.contactEmail + " \u00b7 due " + (r.dueAt || "").slice(0, 10) + " \u00b7 reference " + r.requestId
+        };
+      }),
+      rq: (() => {
+        const on = (b) => b ? { bg: "#0E0F14", bd: "#0E0F14", fg: "#F4F5F7" } : { bg: "#fff", bd: "#C6CAD4", fg: "#22252F" };
+        const amb = (b) => b ? { bg: "#FDF3D8", bd: "#E2A61E", fg: "#0E0F14" } : { bg: "#fff", bd: "#DCDEE4", fg: "#4A4E5C" };
+        const change = (patch) => { this.setState(patch); this.schedulePreview(); };
+        const docsBy = {};
+        for (const d of st.catalogue || []) (docsBy[d.pillar] = docsBy[d.pillar] || []).push(d);
+        const chosen = Object.keys(st.rqDocs).filter(k => st.rqDocs[k]).length;
+        const pv = st.rqPreview;
+        const user = st.user || {};
+        return {
+          companies: (st.liveCompanies || []).filter(c => {
+            const f = (st.rqFilter || "").trim().toLowerCase();
+            return !f || st.rqCode === c.asxCode || c.name.toLowerCase().includes(f) ||
+              c.asxCode.toLowerCase().includes(f) || (c.website || "").toLowerCase().includes(f.replace(/^https?:\/\//, ""));
+          }).map(c => Object.assign(on(st.rqCode === c.asxCode), {
+            label: c.listed === false ? c.name + " · private" : c.asxCode + " · " + c.name,
+            title: c.website || "", pick: () => this.pickRequestCompany(c) })),
+          noCompanies: !(st.liveCompanies || []).length || (!!(st.rqFilter || "").trim() &&
+            !(st.liveCompanies || []).some(c => [c.name, c.asxCode, c.website || ""].join(" ").toLowerCase()
+              .includes((st.rqFilter || "").trim().toLowerCase().replace(/^https?:\/\//, "")))),
+          emptyText: (st.rqFilter || "").trim() ? "\u201c" + st.rqFilter.trim() + "\u201d is not on file. Add it below to send it a request."
+            : "No companies on file yet. Add one below.",
+          filter: st.rqFilter,
+          findContacts: () => this.findCompanyContacts(),
+          findLabel: st.rqFinding ? "Searching…" : "Find published contacts",
+          findOpacity: st.rqCode ? (st.rqFinding ? .6 : 1) : .45,
+          findNote: st.rqCode ? st.rqFoundNote : "Choose a company first",
+          hasFound: (st.rqFound || []).length > 0,
+          found: (st.rqFound || []).map(f => ({
+            email: f.email, role: f.role,
+            roleColor: f.role === "May be a personal address" ? "#B3261E" : "#8A6A12",
+            source: "from " + (f.source || "").replace(/^https?:\/\/[^/]+/, "") .replace(/^$/, "/"),
+            bg: st.rqEmail === f.email ? "#FDF3D8" : "#fff",
+            use: () => { this.setState({ rqEmail: f.email }); this.schedulePreview(); }
+          })),
+          onFilter: e => this.setState({ rqFilter: e.target.value }),
+          addChip: (st.rqFilter || "").trim() ? "+ Add \u201c" + st.rqFilter.trim() + "\u201d" : "+ Add a company",
+          openAdd: () => {
+            const f = (st.rqFilter || "").trim();
+            const site = /^https?:\/\//i.test(f) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(f);
+            this.setState({ rqAddOpen: true, rqAError: "", rqAName: site ? "" : f, rqAWebsite: site ? f : "" });
+          },
+          addOpen: st.rqAddOpen, aName: st.rqAName, aWebsite: st.rqAWebsite, aContact: st.rqAContact, aAsx: st.rqAAsx,
+          onAName: e => this.setState({ rqAName: e.target.value }),
+          onAWebsite: e => this.setState({ rqAWebsite: e.target.value }),
+          onAContact: e => this.setState({ rqAContact: e.target.value }),
+          onAAsx: e => this.setState({ rqAAsx: e.target.value }),
+          aError: st.rqAError, aHasError: !!st.rqAError,
+          aButton: st.rqABusy ? "Adding…" : "Add company",
+          saveAdd: () => this.addFromComposer(),
+          cancelAdd: () => this.setState({ rqAddOpen: false, rqAError: "" }),
+          name: st.rqName, email: st.rqEmail, custom: st.rqCustom, message: st.rqMessage,
+          onName: e => change({ rqName: e.target.value }),
+          onEmail: e => change({ rqEmail: e.target.value }),
+          onCustom: e => change({ rqCustom: e.target.value }),
+          onMessage: e => change({ rqMessage: e.target.value }),
+          dues: [7, 14, 21, 30].map(n => Object.assign(on(st.rqDue === n), { label: n + " days", pick: () => change({ rqDue: n }) })),
+          docCount: chosen ? chosen + " selected" : "choose any",
+          groups: PILLAR_ORDER.filter(k => docsBy[k]).map(k => {
+            const docs = docsBy[k];
+            const all = docs.every(d => st.rqDocs[d.key]);
+            return {
+              label: docs[0].pillarLabel,
+              allLabel: all ? "Clear" : "Select all",
+              toggleAll: () => change({ rqDocs: Object.assign({}, st.rqDocs, Object.fromEntries(docs.map(d => [d.key, !all]))) }),
+              docs: docs.map(d => Object.assign(amb(!!st.rqDocs[d.key]), {
+                label: d.label, mark: st.rqDocs[d.key] ? "\u2713 " : "", pressed: st.rqDocs[d.key] ? "true" : "false",
+                toggle: () => change({ rqDocs: Object.assign({}, st.rqDocs, { [d.key]: !st.rqDocs[d.key] }) })
+              }))
+            };
+          }),
+          hasGaps: !!(st.rqRunId && st.rqGapCount),
+          gapsPressed: st.rqGaps ? "true" : "false", gapsMark: st.rqGaps ? "\u2713" : "",
+          gapsBg: st.rqGaps ? "#FDF3D8" : "#fff", gapsBd: st.rqGaps ? "#E2A61E" : "#DCDEE4",
+          gapsLabel: "Also ask about the " + st.rqGapCount + " criteria the latest assessment (" + st.rqGapDate + ") could not answer from public sources",
+          toggleGaps: () => change({ rqGaps: !st.rqGaps }),
+          submit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitRequestForm(); },
+          button: st.rqBusy ? "Sending…" : "Send request",
+          btnOpacity: st.rqBusy ? .6 : 1,
+          hasStatus: !!st.rqStatus, status: st.rqStatus,
+          statusBd: st.rqStatusOk ? "#E2A61E" : "#E5484D", statusBg: st.rqStatusOk ? "#FDF3D8" : "#FCE8E6",
+          hasLink: !!st.rqLink, openLink: () => window.open(st.rqLink, "_blank"),
+          previewState: st.rqPreviewBusy ? "Updating…" : (pv ? pv.itemCount + " items" : ""),
+          pvTo: pv ? pv.to + (st.rqName ? " (" + st.rqName + ")" : "") : "\u2014",
+          pvReply: user.email ? user.name + " <" + user.email + ">" : "\u2014",
+          pvSubject: pv ? pv.subject : "\u2014",
+          pvText: pv ? pv.text : (st.rqPreviewErr || "Choose a company and at least one document to see the email.")
+        };
+      })(),
+      requestsCount: st.requests.length + " recorded",
+      requestsEmpty: st.requests.length === 0,
+      requestsNote: st.requestsNote || "Re-assess includes every document a company has supplied, marked as provided on request",
       exportNote: a.liveHits != null ? a.liveHits + " criteria matched in live text" : "Reproducible from the stored capture",
 
-      ins: {
-        sentence: (st.result ? "Two of the five expected documents were reached, and rating " + st.result.name + " on what remains would not be defensible — so we have not issued a band."
+      ins: st.payload ? this.liveInsufficient(st, a) : {
+        kicker: "Result · Insufficient evidence", title: "Not enough evidence to rate",
+        primary: () => this.run(st.current || COMPANIES.TBH), primaryLabel: "Retry retrieval",
+        secondary: () => this.setState(s => ({ adding: !s.adding })), secondaryLabel: "Add a source manually",
+        foot: "Declining to rate is a result, not a failure. The attempt, its date and the gaps are stored in history.",
+        sentence: (st.payload && a.hasDecline ? a.declineReason + " Rating " + a.name + " on what remains would not be defensible, so no band has been issued."
+          : st.result ? "Two of the five expected documents were reached, and rating " + st.result.name + " on what remains would not be defensible — so we have not issued a band."
           : "Two of the five expected documents were reached, and rating Torrens Bay Holdings on what remains would not be defensible — so we have not issued a band."),
-        docs: insDocs, adding: st.adding, url: st.manualUrl
+        docs: insDocs.map(d => Object.assign({ code: "", note: "" }, d)), adding: st.adding, url: st.manualUrl
       },
       retry: () => this.run(st.current || COMPANIES.TBH),
       addSource: () => this.setState(s => ({ adding: !s.adding })),
@@ -1087,18 +2112,23 @@ class Component extends DCLogic {
       ],
       gridNotes: [
         { k: "Amber asterisk", v: "Where the assessed company sits. Amber marks this company only — and, elsewhere, departures the company explained." },
-        { k: "Grey field", v: "284 ASX 300 entities assessed under the same matrix version, for position rather than ranking." },
+        { k: "Grey field", v: "Other companies assessed under the same matrix version, for position rather than ranking. Illustrative here; on a live run it appears once enough companies have been assessed." },
         { k: "Dashed guides", v: "The two axis readings that produced the point, taken straight from the findings below." },
         { k: "No colour coding", v: "Ratings use a monochrome ink ramp. A traffic light would imply a judgement the method does not make." }
       ],
-      history: st.history.map(h => ({
+      history: (st.live ? (st.liveHistory || []) : st.history).map(h => ({
         name: h.name, code: h.code, date: h.date, band: h.band, conf: h.conf, matrix: h.matrix,
         bandColor: h.band === "Not rated" || h.band === "Not evidenced" ? "#9AA0AE" : (h.conf === "B" || h.band === "Established" ? AMB : (h.band === "Leading" ? INK : "#6A6F7D")),
         confBd: h.conf === "—" ? "#E7E8EC" : "#B6BAC6", confFg: h.conf === "—" ? "#9AA0AE" : INK,
         rowBg: h.band === "Not rated" ? "#FAFAFB" : "#fff",
-        open: () => { const co = COMPANIES[h.code]; if (co) this.run(co); else this.go("history")(); }
+        open: () => {
+          if (h.runId && st.live) { this.reopen(h); return; }
+          const co = COMPANIES[h.code]; if (co) this.run(co); else this.go("history")();
+        }
       })),
-      historyCount: st.history.length + " records"
+      historyCount: (st.live ? (st.liveHistory || []).length : st.history.length) + " records",
+      historyNote: st.live ? ((st.liveHistory || []).length ? "Live runs are stored on the backend and reopen exactly as issued" : "No live runs yet. Assess a company and it appears here")
+        : "MFG assessed twice — Developing C → Established B under a newer matrix"
     };
   }
 
