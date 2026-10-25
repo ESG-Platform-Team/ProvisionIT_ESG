@@ -124,13 +124,14 @@
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin:14px 0 34px">{{ fieldNote }}</div>
           <sc-if value="{{ add.open }}" hint-placeholder-val="{{ false }}">
             <form onSubmit="{{ addSubmit }}" style="background:#171922;border:1px solid #2E323F;padding:22px 22px 20px;margin:-16px 0 34px">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F4BF3F;margin-bottom:6px">Add a private company</div>
-              <p style="font-size:13.5px;line-height:1.6;color:#9AA0AE;margin:0 0 18px;max-width:62ch">Unlisted companies publish less, so this is where requesting documents matters most. We crawl the website you give, then you can email the contact for anything missing.</p>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F4BF3F;margin-bottom:6px">Add a company</div>
+              <p style="font-size:13.5px;line-height:1.6;color:#9AA0AE;margin:0 0 18px;max-width:62ch">For a private company, or an ASX company that is not on file yet. Private companies publish less, so this is where requesting documents matters most. We crawl the website you give, then you can email the contact for anything missing.</p>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
                 <div><label for="add-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Company name</label><input id="add-name" value="{{ add.name }}" onChange="{{ onAddName }}" placeholder="Acme Recycling" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
                 <div><label for="add-website" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Website</label><input id="add-website" value="{{ add.website }}" onChange="{{ onAddWebsite }}" placeholder="acmerecycling.com.au" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
                 <div><label for="add-contact" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Contact email (for requests)</label><input id="add-contact" type="email" value="{{ add.contact }}" onChange="{{ onAddContact }}" placeholder="sustainability@acme.com.au" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
                 <div><label for="add-sector" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">Sector (optional)</label><input id="add-sector" value="{{ add.sector }}" onChange="{{ onAddSector }}" placeholder="Industrials" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
+                <div><label for="add-asx" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:0 0 7px">ASX code (only if listed)</label><input id="add-asx" value="{{ add.asx }}" onChange="{{ onAddAsx }}" placeholder="e.g. QAN, empty if private" style="width:100%;box-sizing:border-box;background:#0E0F14;border:1px solid #2E323F;color:#F4F5F7;font-size:14px;padding:12px 13px;outline:none"></div>
               </div>
               <sc-if value="{{ add.hasError }}" hint-placeholder-val="{{ false }}">
                 <div role="alert" style="border-left:3px solid #E5484D;background:rgba(229,72,77,.08);color:#F4C7C8;font-size:13px;padding:10px 12px;margin-top:14px">{{ add.error }}</div>
@@ -161,7 +162,7 @@
             <sc-for list="{{ onFile }}" as="c" hint-placeholder-count="6">
               <button onClick="{{ c.pick }}" title="{{ c.title }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px solid {{ c.bd }};color:#C6CAD4;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4F5F7">{{ c.label }}</button>
             </sc-for>
-            <button onClick="{{ addOpen }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px dashed #565C6C;color:#F4BF3F;transition:all .2s" style-hover="border-color:#F4BF3F">+ Add a private company</button>
+            <button onClick="{{ addOpen }}" style="cursor:pointer;padding:9px 16px;border-radius:999px;font-size:12.5px;background:transparent;border:1px dashed #565C6C;color:#F4BF3F;transition:all .2s" style-hover="border-color:#F4BF3F">+ Add a company</button>
           </div>
         </div>
         </sc-if>
@@ -583,14 +584,130 @@
       <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:16px">Disclosure requests · {{ requestsCount }}</div>
       <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:42px;line-height:1;text-transform:uppercase;color:#0E0F14;margin:0 0 12px">Requests</h1>
       <p style="font-size:14.5px;line-height:1.7;color:#5A5F6D;max-width:66ch;margin:0 0 36px">Information asked for directly from companies where public sources were silent. Every request, answer, refusal and lapse is recorded, so the report always says how a gap came to be. A request with no answer by its due date leaves those criteria as insufficient information; it never scores them as zero.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:22px;align-items:start;margin-bottom:44px">
+        <form onSubmit="{{ rq.submit }}" style="background:#fff;border:1px solid #DCDEE4;padding:26px 26px 24px">
+          <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:20px;text-transform:uppercase;color:#0E0F14">New ESG information request</div>
+          <p style="font-size:13.5px;line-height:1.6;color:#5A5F6D;margin:8px 0 0">Choose the company and the documents you need. The email on the right updates as you go and is exactly what the company receives, with a secure link to upload or decline.</p>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">1 · Company</div>
+          <input id="rq-filter" value="{{ rq.filter }}" onChange="{{ rq.onFilter }}" placeholder="Search companies on file, or paste a website" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit;margin-bottom:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <sc-for list="{{ rq.companies }}" as="c" hint-placeholder-count="6">
+              <button type="button" onClick="{{ c.pick }}" title="{{ c.title }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;line-height:1.3;text-align:left;background:{{ c.bg }};border:1px solid {{ c.bd }};color:{{ c.fg }};transition:all .15s">{{ c.label }}</button>
+            </sc-for>
+            <button type="button" onClick="{{ rq.openAdd }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;background:#fff;border:1px dashed #8A8F9C;color:#8A6A12;font-weight:600">{{ rq.addChip }}</button>
+          </div>
+          <sc-if value="{{ rq.addOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F7F7F9;border:1px solid #DCDEE4;padding:16px;margin-top:12px">
+              <div style="font-size:13px;font-weight:600;color:#0E0F14;margin-bottom:4px">Add a company</div>
+              <div style="font-size:12.5px;color:#5A5F6D;margin-bottom:12px">A private company, or an ASX company not on file. It is saved for future requests and assessments.</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+                <div><label for="rqa-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Company name</label><input id="rqa-name" value="{{ rq.aName }}" onChange="{{ rq.onAName }}" placeholder="Acme Recycling" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+                <div><label for="rqa-website" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Website</label><input id="rqa-website" value="{{ rq.aWebsite }}" onChange="{{ rq.onAWebsite }}" placeholder="acmerecycling.com.au" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+                <div><label for="rqa-contact" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Contact email</label><input id="rqa-contact" type="email" value="{{ rq.aContact }}" onChange="{{ rq.onAContact }}" placeholder="sustainability@acme.com.au" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+                <div><label for="rqa-asx" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">ASX code (only if listed)</label><input id="rqa-asx" value="{{ rq.aAsx }}" onChange="{{ rq.onAAsx }}" placeholder="e.g. QAN, empty if private" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+              </div>
+              <sc-if value="{{ rq.aHasError }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="border-left:3px solid #E5484D;background:#FCE8E6;font-size:13px;padding:9px 12px;margin-top:12px">{{ rq.aError }}</div>
+              </sc-if>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button type="button" onClick="{{ rq.saveAdd }}" style="background:#0E0F14;border:none;color:#F4F5F7;padding:11px 18px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">{{ rq.aButton }}</button>
+                <button type="button" onClick="{{ rq.cancelAdd }}" style="background:transparent;border:1px solid #C6CAD4;color:#4A4E5C;padding:11px 16px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">Cancel</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ rq.noCompanies }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;color:#8A8F9C">{{ rq.emptyText }}</div>
+          </sc-if>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">2 · Who receives it</div>
+          <p style="font-size:13px;line-height:1.6;color:#5A5F6D;margin:-4px 0 12px">The person or inbox at the company that gets the email. Use an address the company publishes, ideally its sustainability, investor relations or company secretary contact.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <button type="button" onClick="{{ rq.findContacts }}" style="background:#fff;border:1px solid #0E0F14;color:#0E0F14;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ rq.findOpacity }}">{{ rq.findLabel }}</button>
+            <span style="font-size:12.5px;color:#6A6F7D">{{ rq.findNote }}</span>
+          </div>
+          <sc-if value="{{ rq.hasFound }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid #DCDEE4;margin-bottom:14px">
+              <sc-for list="{{ rq.found }}" as="f" hint-placeholder-count="3">
+                <button type="button" onClick="{{ f.use }}" style="width:100%;text-align:left;display:flex;gap:12px;align-items:baseline;justify-content:space-between;flex-wrap:wrap;background:{{ f.bg }};border:none;border-bottom:1px solid #EDEEF1;padding:10px 12px;cursor:pointer" style-hover="background:#F7F7F9">
+                  <span><span style="font-size:13.5px;color:#0E0F14;font-weight:600">{{ f.email }}</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ f.roleColor }};margin-left:6px">{{ f.role }}</span></span>
+                  <span style="font-size:11.5px;color:#8A8F9C">{{ f.source }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+            <div><label for="rq-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Contact name</label><input id="rq-name" value="{{ rq.name }}" onChange="{{ rq.onName }}" placeholder="Jo Smith" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+            <div><label for="rq-email" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Contact email</label><input id="rq-email" type="email" value="{{ rq.email }}" onChange="{{ rq.onEmail }}" placeholder="sustainability@company.com.au" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit"></div>
+          </div>
+          <div style="margin-top:12px"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Response due in</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ rq.dues }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.pick }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;line-height:1.3;text-align:left;background:{{ d.bg }};border:1px solid {{ d.bd }};color:{{ d.fg }};transition:all .15s">{{ d.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">3 · Documents to request · {{ rq.docCount }}</div>
+          <sc-for list="{{ rq.groups }}" as="g" hint-placeholder-count="3">
+            <div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px">
+                <span style="font-size:13px;font-weight:600;color:#0E0F14">{{ g.label }}</span>
+                <button type="button" onClick="{{ g.toggleAll }}" style="background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A6A12;padding:2px 0">{{ g.allLabel }}</button>
+              </div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap">
+                <sc-for list="{{ g.docs }}" as="x" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ x.toggle }}" aria-pressed="{{ x.pressed }}" style="cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;line-height:1.3;text-align:left;background:{{ x.bg }};border:1px solid {{ x.bd }};color:{{ x.fg }};transition:all .15s">{{ x.mark }}{{ x.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ rq.hasGaps }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ rq.toggleGaps }}" aria-pressed="{{ rq.gapsPressed }}" style="display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;background:{{ rq.gapsBg }};border:1px solid {{ rq.gapsBd }};padding:12px 14px;margin-top:4px">
+              <span style="flex:none;width:18px;height:18px;border:1.5px solid #0E0F14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#fff">{{ rq.gapsMark }}</span>
+              <span style="font-size:13.5px;line-height:1.5;color:#0E0F14">{{ rq.gapsLabel }}</span>
+            </button>
+          </sc-if>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8A6A12;margin:26px 0 12px;font-weight:600">4 · Anything else, and a note</div>
+          <label for="rq-custom" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px">Other items, one per line</label>
+          <textarea id="rq-custom" value="{{ rq.custom }}" onChange="{{ rq.onCustom }}" placeholder="Your 2025 solar installation figures" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit;min-height:70px;resize:vertical"></textarea>
+          <label for="rq-message" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#6A6F7D;margin:0 0 7px;margin-top:12px">Personal note (appears at the top of the email)</label>
+          <textarea id="rq-message" value="{{ rq.message }}" onChange="{{ rq.onMessage }}" placeholder="Thanks for speaking with us last week. As discussed, these are the documents we need." style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:14px;padding:11px 12px;outline:none;font-family:inherit;min-height:70px;resize:vertical"></textarea>
+
+          <sc-if value="{{ rq.hasStatus }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="border-left:3px solid {{ rq.statusBd }};background:{{ rq.statusBg }};font-size:13.5px;line-height:1.55;padding:11px 14px;margin-top:18px;color:#0E0F14">{{ rq.status }}
+              <sc-if value="{{ rq.hasLink }}" hint-placeholder-val="{{ false }}"><br><button type="button" onClick="{{ rq.openLink }}" style="margin-top:8px;background:transparent;border:none;padding:0;cursor:pointer;color:#8A6A12;font-weight:600;font-size:13.5px;text-decoration:underline">Open the company's response page</button></sc-if>
+            </div>
+          </sc-if>
+          <button type="submit" style="width:100%;margin-top:20px;background:#F4BF3F;border:none;color:#0E0F14;padding:15px 18px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ rq.btnOpacity }}">{{ rq.button }}</button>
+        </form>
+
+        <div style="background:#fff;border:1px solid #DCDEE4;position:sticky;top:86px">
+          <div style="background:#0E0F14;border-top:3px solid #F4BF3F;padding:14px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#F4BF3F">Email preview</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">{{ rq.previewState }}</span>
+          </div>
+          <div style="padding:16px 20px;border-bottom:1px solid #EDEEF1;font-size:13px;line-height:1.7;color:#4A4E5C">
+            <div><span style="color:#8A8F9C;display:inline-block;width:64px">To</span>{{ rq.pvTo }}</div>
+            <div><span style="color:#8A8F9C;display:inline-block;width:64px">Reply to</span>{{ rq.pvReply }}</div>
+            <div><span style="color:#8A8F9C;display:inline-block;width:64px">Subject</span><b style="color:#0E0F14">{{ rq.pvSubject }}</b></div>
+          </div>
+          <pre style="margin:0;padding:18px 20px 22px;white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.65;color:#22252F;max-height:70vh;overflow:auto">{{ rq.pvText }}</pre>
+        </div>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:14px">Sent requests</div>
       <div style="background:#fff;border:1px solid #DCDEE4">
         <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:14px 22px;border-bottom:1px solid #DCDEE4;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
           <span>Company</span><span>Sent</span><span>Due</span><span>Status</span><span>Items</span><span></span>
         </div>
         <sc-for list="{{ requests }}" as="r" hint-placeholder-count="3">
-          <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:16px 22px;border-bottom:1px solid #EDEEF1;align-items:center">
+          <div style="border-bottom:1px solid #EDEEF1;background:{{ r.rowBg }}">
+          <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:16px 22px;align-items:center">
             <span>
-              <span style="display:block;font-size:14px;color:#0E0F14;font-weight:500">{{ r.name }}</span>
+              <button onClick="{{ r.toggle }}" aria-expanded="{{ r.expanded }}" style="display:block;background:transparent;border:none;padding:0;cursor:pointer;text-align:left;font-size:14px;color:#0E0F14;font-weight:600" style-hover="color:#8A6A12">{{ r.caret }} {{ r.name }}</button>
               <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#8A8F9C;margin-top:4px">{{ r.code }} · {{ r.contact }}</span>
             </span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.sent }}</span>
@@ -600,8 +717,35 @@
             <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
               <sc-if value="{{ r.canOpen }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.open }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Response page</button></sc-if>
               <sc-if value="{{ r.canOpen }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.close }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Close, no response</button></sc-if>
+              <button onClick="{{ r.toggle }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">{{ r.viewLabel }}</button>
               <button onClick="{{ r.reassess }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s;background:#F4BF3F;border-color:#F4BF3F" style-hover="background:#E2A61E">Re-assess</button>
             </span>
+          </div>
+          <sc-if value="{{ r.open2 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;padding:4px 22px 24px">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A12;font-weight:600;margin-bottom:10px">Documents provided · {{ r.docCount }}</div>
+                <sc-for list="{{ r.docs }}" as="d" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border:1px solid #DCDEE4;padding:10px 12px;margin-bottom:8px">
+                    <span><span style="display:block;font-size:13.5px;color:#0E0F14;font-weight:500">{{ d.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8A8F9C">{{ d.meta }}</span></span>
+                    <span style="display:flex;gap:6px;flex:none">
+                      <button onClick="{{ d.view }}" style="background:#0E0F14;border:none;color:#F4F5F7;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase">Open</button>
+                      <button onClick="{{ d.download }}" style="background:transparent;border:1px solid #C6CAD4;color:#4A4E5C;padding:8px 10px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase">Download</button>
+                    </span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ r.noDocs }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#8A8F9C">{{ r.noDocsText }}</div></sc-if>
+                <div style="font-size:12.5px;line-height:1.6;color:#5A5F6D;margin-top:10px">{{ r.respondent }}</div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A12;font-weight:600;margin-bottom:10px">What was requested · {{ r.itemCount }}</div>
+                <sc-for list="{{ r.asked }}" as="a" hint-placeholder-count="4">
+                  <div style="font-size:13px;line-height:1.5;color:#22252F;padding:5px 0;border-bottom:1px dashed #E7E8EC"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8A8F9C;margin-right:8px">{{ a.tag }}</span>{{ a.label }}</div>
+                </sc-for>
+                <div style="font-size:12px;color:#8A8F9C;margin-top:10px">{{ r.timeline }}</div>
+              </div>
+            </div>
+          </sc-if>
           </div>
         </sc-for>
         <sc-if value="{{ requestsEmpty }}" hint-placeholder-val="{{ false }}">
@@ -939,7 +1083,7 @@ const SEED_HISTORY = [
   { name: "Southern Cross Rail", code: "SXR", date: "29 Jul 2026", band: "Not evidenced", conf: "E", matrix: "G-3rdEd v2.4" }
 ];
 // Bump on every release so browsers never mix a new page with an old cached module.
-const BUILD = "0.5.0";
+const BUILD = "0.6.4";
 const STORE = "provisionit.history.v1";
 
 function bandFor(mean) {
@@ -1039,8 +1183,13 @@ class Component extends DCLogic {
     reqOpen: false, reqEmail: "", reqBy: "", reqStatus: "", reqLink: "",
     requests: [], requestsNote: "", liveHistory: [],
     user: null, authMode: "signin", authName: "", authEmail: "", authPassword: "", authError: "", authBusy: false, pwShown: false,
-    liveCompanies: [], addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "",
-    addError: "", addBusy: false
+    liveCompanies: [], addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "", addAsx: "",
+    addError: "", addBusy: false,
+    catalogue: [], rqCode: "", rqName: "", rqEmail: "", rqDue: 21, rqDocs: {}, rqCustom: "", rqMessage: "",
+    rqGaps: false, rqRunId: null, rqGapCount: 0, rqGapDate: "", rqPreview: null, rqPreviewErr: "",
+    rqPreviewBusy: false, rqStatus: "", rqStatusOk: true, rqLink: "", rqBusy: false,
+    rqFilter: "", rqAddOpen: false, rqAName: "", rqAWebsite: "", rqAContact: "", rqAAsx: "", rqAError: "", rqABusy: false,
+    rqFinding: false, rqFound: [], rqFoundNote: "", reqOpenId: null
   };
 
   componentDidMount() {
@@ -1276,6 +1425,129 @@ class Component extends DCLogic {
     }
   }
 
+  async openRequestForm(prefill) {
+    this.go("requests")();
+    if (prefill) this.set(Object.assign({ rqStatus: "", rqLink: "" }, prefill));
+    await Promise.all([this.loadRequests(), this.loadCatalogue(),
+                       (this.current().state.liveCompanies || []).length ? null : this.loadCompanies()]);
+    this.schedulePreview();
+  }
+
+  async loadCatalogue() {
+    if ((this.current().state.catalogue || []).length) return;
+    try {
+      const api = await this.api();
+      const out = await api.requestCatalogue();
+      this.set({ catalogue: out.documents || [] });
+    } catch (err) { console.error("[provision] catalogue failed", err); }
+  }
+
+  async pickRequestCompany(c) {
+    this.set({ rqFound: [], rqFoundNote: "", rqCode: c.asxCode, rqEmail: c.contactEmail || "", rqRunId: null, rqGaps: false,
+               rqGapCount: 0, rqGapDate: "", rqStatus: "", rqLink: "" });
+    this.schedulePreview();
+    try {
+      const api = await this.api();
+      const runs = await api.listRuns(c.asxCode);
+      if (!runs.length) return;
+      const run = await api.getRun(runs[0].runId);
+      let n = 0;
+      for (const p of run.pillars || []) for (const pr of p.principles) for (const r of pr.criteria)
+        if (r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED") n++;
+      if (this.current().state.rqCode !== c.asxCode) return;
+      this.set({ rqRunId: run.runId, rqGapCount: n, rqGapDate: (run.completedAt || "").slice(0, 10) });
+    } catch (err) { console.error("[provision] latest run lookup failed", err); }
+  }
+
+  async addFromComposer() {
+    const st = this.current().state;
+    if (st.rqABusy) return;
+    if (!st.rqAWebsite.trim()) { this.set({ rqAError: "Enter the company website." }); return; }
+    this.set({ rqABusy: true, rqAError: "" });
+    try {
+      const api = await this.api();
+      const co = await api.addCompany(st.rqAName, st.rqAWebsite, st.rqAContact, "", st.rqAAsx);
+      this.set({ rqABusy: false, rqAddOpen: false, rqAName: "", rqAWebsite: "", rqAContact: "", rqAAsx: "", rqFilter: "" });
+      await this.loadCompanies();
+      this.pickRequestCompany(co);
+    } catch (err) {
+      this.set({ rqABusy: false, rqAError: (err && err.message) || "Could not add the company" });
+    }
+  }
+
+  async findCompanyContacts() {
+    const st = this.current().state;
+    if (!st.rqCode || st.rqFinding) return;
+    this.set({ rqFinding: true, rqFound: [], rqFoundNote: "Reading the company's website…" });
+    try {
+      const api = await this.api();
+      const out = await api.findContacts(st.rqCode);
+      if (this.current().state.rqCode !== st.rqCode) return;
+      this.set({ rqFinding: false, rqFound: out.contacts || [],
+                 rqFoundNote: (out.contacts || []).length
+                   ? (out.contacts.length + " published address" + (out.contacts.length === 1 ? "" : "es") + " on " + out.pagesChecked + " pages. Click one to use it.")
+                   : "No published addresses found on " + out.pagesChecked + " pages. Look on the company's contact page or annual report." });
+    } catch (err) {
+      this.set({ rqFinding: false, rqFoundNote: (err && err.message) || "Could not read the website" });
+    }
+  }
+
+  requestForm() {
+    const st = this.current().state;
+    return {
+      companyCode: st.rqCode, contactName: st.rqName, contactEmail: st.rqEmail,
+      documents: Object.keys(st.rqDocs).filter(k => st.rqDocs[k]),
+      custom: (st.rqCustom || "").split("\n").map(x => x.trim()).filter(Boolean),
+      message: st.rqMessage, dueDays: st.rqDue,
+      runId: st.rqGaps ? st.rqRunId : null, includeGaps: !!(st.rqGaps && st.rqRunId)
+    };
+  }
+
+  schedulePreview() {
+    clearTimeout(this._pvTimer);
+    this._pvTimer = setTimeout(() => this.refreshPreview(), 300);
+  }
+
+  async refreshPreview() {
+    const form = this.requestForm();
+    if (!form.companyCode) { this.set({ rqPreview: null, rqPreviewErr: "Choose a company to start." }); return; }
+    const ticket = (this._pvTicket = (this._pvTicket || 0) + 1);
+    this.set({ rqPreviewBusy: true });
+    try {
+      const api = await this.api();
+      const pv = await api.previewRequest(form);
+      if (ticket !== this._pvTicket) return;
+      this.set({ rqPreview: pv, rqPreviewErr: "", rqPreviewBusy: false });
+    } catch (err) {
+      if (ticket !== this._pvTicket) return;
+      this.set({ rqPreview: null, rqPreviewErr: (err && err.message) || "Preview unavailable", rqPreviewBusy: false });
+    }
+  }
+
+  async submitRequestForm() {
+    const st = this.current().state;
+    if (st.rqBusy) return;
+    const form = this.requestForm();
+    if (!form.companyCode) { this.set({ rqStatus: "Choose a company first.", rqStatusOk: false }); return; }
+    if (!form.contactEmail.trim()) { this.set({ rqStatus: "Enter the contact email.", rqStatusOk: false }); return; }
+    this.set({ rqBusy: true, rqStatus: "Sending…", rqStatusOk: true, rqLink: "" });
+    try {
+      const api = await this.api();
+      const out = await api.sendRequestForm(form);
+      const d = out.delivery || {};
+      this.set({
+        rqBusy: false, rqStatusOk: !!d.delivered || !d.error,
+        rqStatus: (d.delivered ? "Sent to " + out.contactEmail : "Saved, not emailed: " + (d.note || "")) +
+          ". " + out.itemCount + " items, response due " + out.dueAt.slice(0, 10) + ". Reference " + out.requestId + ".",
+        rqLink: out.responseUrl || "", rqDocs: {}, rqCustom: "", rqMessage: "", rqGaps: false
+      });
+      this.loadRequests();
+      this.schedulePreview();
+    } catch (err) {
+      this.set({ rqBusy: false, rqStatus: (err && err.message) || "Could not send the request", rqStatusOk: false });
+    }
+  }
+
   async loadRequests() {
     if (!this.live()) { this.set({ requests: [], requestsNote: "Requests need the live backend." }); return; }
     try {
@@ -1366,8 +1638,8 @@ class Component extends DCLogic {
     this.set({ addBusy: true, addError: "" });
     try {
       const api = await this.api();
-      const co = await api.addCompany(st.addName, st.addWebsite, st.addContact, st.addSector);
-      this.set({ addBusy: false, addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "",
+      const co = await api.addCompany(st.addName, st.addWebsite, st.addContact, st.addSector, st.addAsx);
+      this.set({ addBusy: false, addOpen: false, addName: "", addWebsite: "", addContact: "", addSector: "", addAsx: "",
                  query: co.name, searchNote: "" });
       await this.loadCompanies();
       this.runViaApi(co.asxCode);
@@ -1416,9 +1688,11 @@ class Component extends DCLogic {
     }
     const name = p.company.name;
     const openReq = () => {
-      this.go("assessment")();
-      this.set({ reqOpen: true, mailOpen: false });
-      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 150);
+      let n = 0;
+      for (const pl of p.pillars || []) for (const pr of pl.principles) for (const r of pr.criteria)
+        if (r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED") n++;
+      this.openRequestForm({ rqCode: p.company.asxCode, rqEmail: p.company.contactEmail || "",
+        rqRunId: p.runId, rqGaps: n > 0, rqGapCount: n, rqGapDate: (p.completedAt || "").slice(0, 10) });
     };
     return {
       kicker: "Insufficient information · " + rows.length + " criteria",
@@ -1428,7 +1702,7 @@ class Component extends DCLogic {
           : "Public sources answered every criterion in scope for " + name + "."),
       docs: rows, adding: false, url: "",
       primary: openReq, primaryLabel: "Request missing disclosures",
-      secondary: () => { this.go("requests")(); this.loadRequests(); }, secondaryLabel: "Track requests",
+      secondary: () => this.openRequestForm(), secondaryLabel: "Track requests",
       foot: "Insufficient information describes what was available to us, not a finding against the company. Declining to rate is a result, not a failure."
     };
   }
@@ -1497,7 +1771,7 @@ class Component extends DCLogic {
       progress: st.progress,
       tabs: sc === "signin" ? [] : [tab("Search","search"), tab("Retrieval","retrieval"), tab("Assessment","assessment"),
              tab("Insufficient","insufficient"), Object.assign(tab("History","history"), { go: () => { this.go("history")(); this.loadHistory(); } }),
-             Object.assign(tab("Requests","requests"), { go: () => { this.go("requests")(); this.loadRequests(); } })],
+             Object.assign(tab("Requests","requests"), { go: () => this.openRequestForm() })],
       isSearch: sc === "search", isRetrieval: sc === "retrieval", isAssessment: sc === "assessment",
       isMobile: sc === "mobile", isInsufficient: sc === "insufficient", isHistory: sc === "history",
       isRequests: sc === "requests", isSignin: sc === "signin",
@@ -1522,7 +1796,7 @@ class Component extends DCLogic {
             pwComplete: "current-password", pwType: st.pwShown ? "text" : "password", pwShown: st.pwShown ? "true" : "false",
             pwToggle: st.pwShown ? "Hide" : "Show", pwToggleAria: st.pwShown ? "Hide password" : "Show password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 },
       goSearch: this.go("search"), goHistory: () => { this.go("history")(); this.loadHistory(); },
-      goRequests: () => { this.go("requests")(); this.loadRequests(); },
+      goRequests: () => this.openRequestForm(),
       peerField: st.payload ? false : (this.props.showPeerField ?? true),
 
       live: st.live
@@ -1573,8 +1847,9 @@ class Component extends DCLogic {
       onAddWebsite: e => this.setState({ addWebsite: e.target.value }),
       onAddContact: e => this.setState({ addContact: e.target.value }),
       onAddSector: e => this.setState({ addSector: e.target.value }),
+      onAddAsx: e => this.setState({ addAsx: e.target.value }),
       add: { open: !!(st.live && st.addOpen), name: st.addName, website: st.addWebsite, contact: st.addContact,
-             sector: st.addSector, error: st.addError, hasError: !!st.addError,
+             sector: st.addSector, asx: st.addAsx, error: st.addError, hasError: !!st.addError,
              button: st.addBusy ? "Adding…" : "Add and assess", btnOpacity: st.addBusy ? .6 : 1 },
       suggestions: st.live ? liveMatches.map(c => ({
         name: c.name, meta: c.asxCode + " · " + (c.listed === false ? "Private" : (c.tier || "")),
@@ -1657,7 +1932,15 @@ class Component extends DCLogic {
       sendMail: () => this.sendMail(),
       req: { open: st.reqOpen, email: st.reqEmail, by: st.reqBy || (st.user ? st.user.name : ""), status: st.reqStatus,
              hasLink: !!st.reqLink, count: (a.requestable || 0) + " unanswered criteria across the assessed pillars" },
-      toggleReq: () => this.setState(s => ({ reqOpen: !s.reqOpen, mailOpen: false })),
+      toggleReq: () => {
+        const p = st.payload;
+        if (!p) return;
+        let n = 0;
+        for (const pl of p.pillars || []) for (const pr of pl.principles) for (const r of pr.criteria)
+          if (r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED") n++;
+        this.openRequestForm({ rqCode: p.company.asxCode, rqEmail: p.company.contactEmail || "",
+          rqRunId: p.runId, rqGaps: n > 0, rqGapCount: n, rqGapDate: (p.completedAt || "").slice(0, 10) });
+      },
       onReqEmail: e => this.setState({ reqEmail: e.target.value }),
       onReqBy: e => this.setState({ reqBy: e.target.value }),
       sendReq: () => this.sendReq(),
@@ -1671,13 +1954,123 @@ class Component extends DCLogic {
           sent: (r.sentAt || "").slice(0, 10), due: (r.dueAt || "").slice(0, 10),
           status: label + (r.documentsProvided ? " · " + r.documentsProvided + " docs" : ""),
           color: r.status === "RESPONDED" ? INK : (r.status === "SENT" ? DEEP : "#8A8F9C"),
-          items: r.criteria.length + " · " + r.pillars.map(x => x[0]).join(" "),
+          items: (r.itemCount || r.criteria.length) + " · " + r.pillars.map(x => x[0]).join(" "),
           canOpen: r.status === "SENT" && !!r.responseUrl,
           open: () => window.open(r.responseUrl, "_blank"),
           close: () => this.closeReq(r.requestId),
-          reassess: () => this.reassessReq(r)
+          reassess: () => this.reassessReq(r),
+          toggle: () => this.setState(s => ({ reqOpenId: s.reqOpenId === r.requestId ? null : r.requestId })),
+          open2: st.reqOpenId === r.requestId, expanded: st.reqOpenId === r.requestId ? "true" : "false",
+          caret: st.reqOpenId === r.requestId ? "\u25be" : "\u25b8",
+          viewLabel: st.reqOpenId === r.requestId ? "Hide" : (r.documentsProvided ? "View documents" : "Details"),
+          rowBg: st.reqOpenId === r.requestId ? "#FAFAFB" : "#fff",
+          docs: ((r.response || {}).documents || []).map(d => ({
+            title: d.title.replace(/ \(provided on request\)$/, ""),
+            meta: (d.file || "") + " \u00b7 " + (d.bytes > 1048576 ? (d.bytes / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(d.bytes / 1024)) + " KB"),
+            view: async () => { try { const api = await this.api(); await api.openRequestDocument(r.requestId, d.index, false); } catch (e) { alert(e.message || e); } },
+            download: async () => { try { const api = await this.api(); await api.openRequestDocument(r.requestId, d.index, true); } catch (e) { alert(e.message || e); } }
+          })),
+          docCount: ((r.response || {}).documents || []).length,
+          noDocs: !((r.response || {}).documents || []).length,
+          noDocsText: r.status === "DECLINED" ? "The company declined" + ((r.response || {}).declineReason ? ": \u201c" + r.response.declineReason + "\u201d" : ".")
+            : r.status === "NO_RESPONSE" ? "No response by the due date, so these items are reported as insufficient information."
+            : "Nothing received yet.",
+          respondent: (r.response && (r.response.respondentName || r.response.respondentEmail))
+            ? "Sent by " + [r.response.respondentName, r.response.respondentEmail].filter(Boolean).join(", ") + (r.respondedAt ? " on " + r.respondedAt.slice(0, 10) : "") : "",
+          itemCount: (r.items || []).length,
+          asked: (r.items || []).map(i => ({ tag: i.kind === "document" ? (i.pillar || "")[0] : i.kind === "custom" ? "+" : i.criterionCode, label: i.label || i.question })),
+          timeline: "Sent " + (r.sentAt || "").slice(0, 10) + (r.requestedBy ? " by " + r.requestedBy : "") + " to " + (r.contactName ? r.contactName + ", " : "") + r.contactEmail + " \u00b7 due " + (r.dueAt || "").slice(0, 10) + " \u00b7 reference " + r.requestId
         };
       }),
+      rq: (() => {
+        const on = (b) => b ? { bg: "#0E0F14", bd: "#0E0F14", fg: "#F4F5F7" } : { bg: "#fff", bd: "#C6CAD4", fg: "#22252F" };
+        const amb = (b) => b ? { bg: "#FDF3D8", bd: "#E2A61E", fg: "#0E0F14" } : { bg: "#fff", bd: "#DCDEE4", fg: "#4A4E5C" };
+        const change = (patch) => { this.setState(patch); this.schedulePreview(); };
+        const docsBy = {};
+        for (const d of st.catalogue || []) (docsBy[d.pillar] = docsBy[d.pillar] || []).push(d);
+        const chosen = Object.keys(st.rqDocs).filter(k => st.rqDocs[k]).length;
+        const pv = st.rqPreview;
+        const user = st.user || {};
+        return {
+          companies: (st.liveCompanies || []).filter(c => {
+            const f = (st.rqFilter || "").trim().toLowerCase();
+            return !f || st.rqCode === c.asxCode || c.name.toLowerCase().includes(f) ||
+              c.asxCode.toLowerCase().includes(f) || (c.website || "").toLowerCase().includes(f.replace(/^https?:\/\//, ""));
+          }).map(c => Object.assign(on(st.rqCode === c.asxCode), {
+            label: c.listed === false ? c.name + " · private" : c.asxCode + " · " + c.name,
+            title: c.website || "", pick: () => this.pickRequestCompany(c) })),
+          noCompanies: !(st.liveCompanies || []).length || (!!(st.rqFilter || "").trim() &&
+            !(st.liveCompanies || []).some(c => [c.name, c.asxCode, c.website || ""].join(" ").toLowerCase()
+              .includes((st.rqFilter || "").trim().toLowerCase().replace(/^https?:\/\//, "")))),
+          emptyText: (st.rqFilter || "").trim() ? "\u201c" + st.rqFilter.trim() + "\u201d is not on file. Add it below to send it a request."
+            : "No companies on file yet. Add one below.",
+          filter: st.rqFilter,
+          findContacts: () => this.findCompanyContacts(),
+          findLabel: st.rqFinding ? "Searching…" : "Find published contacts",
+          findOpacity: st.rqCode ? (st.rqFinding ? .6 : 1) : .45,
+          findNote: st.rqCode ? st.rqFoundNote : "Choose a company first",
+          hasFound: (st.rqFound || []).length > 0,
+          found: (st.rqFound || []).map(f => ({
+            email: f.email, role: f.role,
+            roleColor: f.role === "May be a personal address" ? "#B3261E" : "#8A6A12",
+            source: "from " + (f.source || "").replace(/^https?:\/\/[^/]+/, "") .replace(/^$/, "/"),
+            bg: st.rqEmail === f.email ? "#FDF3D8" : "#fff",
+            use: () => { this.setState({ rqEmail: f.email }); this.schedulePreview(); }
+          })),
+          onFilter: e => this.setState({ rqFilter: e.target.value }),
+          addChip: (st.rqFilter || "").trim() ? "+ Add \u201c" + st.rqFilter.trim() + "\u201d" : "+ Add a company",
+          openAdd: () => {
+            const f = (st.rqFilter || "").trim();
+            const site = /^https?:\/\//i.test(f) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(f);
+            this.setState({ rqAddOpen: true, rqAError: "", rqAName: site ? "" : f, rqAWebsite: site ? f : "" });
+          },
+          addOpen: st.rqAddOpen, aName: st.rqAName, aWebsite: st.rqAWebsite, aContact: st.rqAContact, aAsx: st.rqAAsx,
+          onAName: e => this.setState({ rqAName: e.target.value }),
+          onAWebsite: e => this.setState({ rqAWebsite: e.target.value }),
+          onAContact: e => this.setState({ rqAContact: e.target.value }),
+          onAAsx: e => this.setState({ rqAAsx: e.target.value }),
+          aError: st.rqAError, aHasError: !!st.rqAError,
+          aButton: st.rqABusy ? "Adding…" : "Add company",
+          saveAdd: () => this.addFromComposer(),
+          cancelAdd: () => this.setState({ rqAddOpen: false, rqAError: "" }),
+          name: st.rqName, email: st.rqEmail, custom: st.rqCustom, message: st.rqMessage,
+          onName: e => change({ rqName: e.target.value }),
+          onEmail: e => change({ rqEmail: e.target.value }),
+          onCustom: e => change({ rqCustom: e.target.value }),
+          onMessage: e => change({ rqMessage: e.target.value }),
+          dues: [7, 14, 21, 30].map(n => Object.assign(on(st.rqDue === n), { label: n + " days", pick: () => change({ rqDue: n }) })),
+          docCount: chosen ? chosen + " selected" : "choose any",
+          groups: PILLAR_ORDER.filter(k => docsBy[k]).map(k => {
+            const docs = docsBy[k];
+            const all = docs.every(d => st.rqDocs[d.key]);
+            return {
+              label: docs[0].pillarLabel,
+              allLabel: all ? "Clear" : "Select all",
+              toggleAll: () => change({ rqDocs: Object.assign({}, st.rqDocs, Object.fromEntries(docs.map(d => [d.key, !all]))) }),
+              docs: docs.map(d => Object.assign(amb(!!st.rqDocs[d.key]), {
+                label: d.label, mark: st.rqDocs[d.key] ? "\u2713 " : "", pressed: st.rqDocs[d.key] ? "true" : "false",
+                toggle: () => change({ rqDocs: Object.assign({}, st.rqDocs, { [d.key]: !st.rqDocs[d.key] }) })
+              }))
+            };
+          }),
+          hasGaps: !!(st.rqRunId && st.rqGapCount),
+          gapsPressed: st.rqGaps ? "true" : "false", gapsMark: st.rqGaps ? "\u2713" : "",
+          gapsBg: st.rqGaps ? "#FDF3D8" : "#fff", gapsBd: st.rqGaps ? "#E2A61E" : "#DCDEE4",
+          gapsLabel: "Also ask about the " + st.rqGapCount + " criteria the latest assessment (" + st.rqGapDate + ") could not answer from public sources",
+          toggleGaps: () => change({ rqGaps: !st.rqGaps }),
+          submit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitRequestForm(); },
+          button: st.rqBusy ? "Sending…" : "Send request",
+          btnOpacity: st.rqBusy ? .6 : 1,
+          hasStatus: !!st.rqStatus, status: st.rqStatus,
+          statusBd: st.rqStatusOk ? "#E2A61E" : "#E5484D", statusBg: st.rqStatusOk ? "#FDF3D8" : "#FCE8E6",
+          hasLink: !!st.rqLink, openLink: () => window.open(st.rqLink, "_blank"),
+          previewState: st.rqPreviewBusy ? "Updating…" : (pv ? pv.itemCount + " items" : ""),
+          pvTo: pv ? pv.to + (st.rqName ? " (" + st.rqName + ")" : "") : "\u2014",
+          pvReply: user.email ? user.name + " <" + user.email + ">" : "\u2014",
+          pvSubject: pv ? pv.subject : "\u2014",
+          pvText: pv ? pv.text : (st.rqPreviewErr || "Choose a company and at least one document to see the email.")
+        };
+      })(),
       requestsCount: st.requests.length + " recorded",
       requestsEmpty: st.requests.length === 0,
       requestsNote: st.requestsNote || "Re-assess includes every document a company has supplied, marked as provided on request",

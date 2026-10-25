@@ -159,13 +159,16 @@ class DisclosureRequest(Base):
 
 
 class RequestItem(Base):
-    """One criterion a request asked the company about."""
+    """One thing a request asked the company for: a document from the catalogue,
+    a criterion the assessment could not answer, or a written-in item."""
     __tablename__ = "request_items"
     __table_args__ = (UniqueConstraint("request_id", "criterion_code"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     request_id: Mapped[str] = mapped_column(ForeignKey("disclosure_requests.id",
                                                        ondelete="CASCADE"))
-    criterion_code: Mapped[str] = mapped_column(String(10))
+    criterion_code: Mapped[str] = mapped_column(String(60))
+    kind: Mapped[str] = mapped_column(String(20), default="criterion")
+    label: Mapped[str | None] = mapped_column(Text)
     pillar: Mapped[str] = mapped_column(String(20))
     status_at_request: Mapped[str] = mapped_column(String(30))
 
@@ -219,10 +222,29 @@ def engine():
                 def _fk_on(conn, _record):
                     conn.execute("PRAGMA foreign_keys=ON")
             Base.metadata.create_all(_engine)
+            _add_missing_columns(_engine)
             _Session = sessionmaker(_engine, expire_on_commit=False)
             if legacy:
                 _import_legacy(legacy)
     return _engine
+
+
+# Columns added after the first relational release. create_all() makes new
+# tables but never alters existing ones, so add these if a database predates them.
+_LATER_COLUMNS = {
+    "request_items": {"kind": "VARCHAR(20) DEFAULT 'criterion'", "label": "TEXT"},
+}
+
+
+def _add_missing_columns(eng) -> None:
+    from sqlalchemy import inspect, text
+    insp = inspect(eng)
+    with eng.begin() as conn:
+        for table, cols in _LATER_COLUMNS.items():
+            have = {c["name"] for c in insp.get_columns(table)}
+            for name, ddl in cols.items():
+                if name not in have:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
 def _move_legacy(path: Path) -> Path | None:

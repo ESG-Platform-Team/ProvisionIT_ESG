@@ -240,7 +240,9 @@ def save_request(req: dict) -> None:
             s.execute(delete(db.RequestDocument).where(db.RequestDocument.request_id == row.id))
             s.flush()
             s.expire(row, ["items", "documents"])
-        row.items = [db.RequestItem(criterion_code=i["criterionCode"], pillar=i["pillar"],
+        row.items = [db.RequestItem(criterion_code=i["criterionCode"],
+                                    kind=i.get("kind", "criterion"),
+                                    label=i.get("label") or i.get("question"), pillar=i["pillar"],
                                     status_at_request=i["status"]) for i in req["items"]]
         row.documents = [db.RequestDocument(title=d["title"][:300], path=d["path"],
                                             media_type=d["mediaType"], bytes=d["bytes"])
