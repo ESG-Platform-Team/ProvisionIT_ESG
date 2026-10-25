@@ -49,14 +49,26 @@ DOC_PATTERNS = [
     ("diversity_policy", r"diversity[- ](policy|and[- ]inclusion)"),
     ("disclosure_policy", r"continuous[- ]disclosure|disclosure[- ]policy"),
     ("remuneration_report", r"remuneration[- ]report"),
-    ("sustainability_report", r"sustainability[- ]report|esg[- ]report|climate[- ]report"),
+    # Environmental and social documents. Placed before the generic
+    # sustainability report so a climate statement is not filed as one.
+    ("climate_statement", r"climate[- ](statement|disclosure|related[- ]financial)|tcfd|aasb[- ]?s2"),
+    ("modern_slavery_statement", r"modern[- ]slavery"),
+    ("wgea_report", r"wgea|workplace[- ]gender[- ]equality|gender[- ]pay[- ]gap"),
+    ("human_rights_policy", r"human[- ]rights"),
+    ("environmental_policy", r"environment(al)?[- ]policy"),
+    ("supplier_code", r"supplier[- ]code|responsible[- ]sourcing|supplier[- ]conduct"),
+    ("reconciliation_action_plan", r"reconciliation[- ]action[- ]plan"),
+    ("whs_policy", r"(health[- ](and|&)[- ]safety|whs|safety)[- ]policy"),
+    ("privacy_policy", r"privacy[- ](policy|statement)"),
+    ("sustainability_report", r"sustainability[- ]report|esg[- ]report|climate[- ]report|impact[- ]report"),
     ("constitution", r"constitution"),
     ("notice_of_meeting", r"notice[- ]of[- ](annual[- ])?meeting"),
     ("agm_results", r"results[- ]of[- ]meeting|agm[- ]results|voting[- ]results"),
 ]
 
 # Pages likely to link to the documents above.
-HUB_PATTERNS = r"governance|investor|about[- ]us|leadership|board|polic|sustainab|shareholder"
+HUB_PATTERNS = (r"governance|investor|about[- ]us|leadership|board|polic|sustainab|shareholder"
+                r"|esg|climate|environment|responsib|community|people")
 
 
 @dataclass
@@ -238,16 +250,39 @@ class Harvester:
                             "is_pdf": href.lower().split("?")[0].endswith(".pdf"),
                         }
                     elif depth == 0 and re.search(HUB_PATTERNS, haystack):
-                        if href not in seen_pages and len(next_pages) < 6:
+                        if href not in seen_pages and len(next_pages) < 8:
                             next_pages.append(href)
             pages_to_scan = next_pages
 
         # A PDF of the governance statement beats an HTML page describing it.
         ranked = sorted(
-            found.values(),
+            latest_only(list(found.values())),
             key=lambda d: (not d["is_pdf"], _type_rank(d["source_type"])),
         )
         return ranked[: self.max_docs]
+
+
+_YEAR = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
+
+
+def _year(doc: dict) -> int | None:
+    years = [int(y) for y in _YEAR.findall(f"{doc['title']} {doc['url']}") if 2000 <= int(y) <= 2100]
+    return max(years) if years else None
+
+
+def latest_only(docs: list[dict]) -> list[dict]:
+    """Keep the newest edition of each kind of report. Sites list every year's
+    governance statement, climate report and modern slavery statement; only the
+    current one describes the company as it is, and fetching the archive costs
+    minutes and model calls for nothing. Undated documents (policies, charters)
+    are all kept."""
+    newest: dict[str, int] = {}
+    for d in docs:
+        y = _year(d)
+        if y is not None:
+            newest[d["source_type"]] = max(y, newest.get(d["source_type"], y))
+    return [d for d in docs
+            if _year(d) is None or _year(d) == newest.get(d["source_type"])]
 
 
 def _classify(haystack: str) -> str | None:

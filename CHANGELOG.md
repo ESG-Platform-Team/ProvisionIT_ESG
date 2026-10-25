@@ -6,6 +6,12 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Crawler recognises climate statements, modern slavery statements, WGEA reports,
+  reconciliation action plans and privacy, environmental and supplier policies
+  (feature/esg-document-crawler)
+- Only the newest edition of each dated report is fetched (feature/esg-document-crawler)
+- Fixture company gains a sustainability hub, climate statement, modern slavery
+  statement, privacy policy and one broken link (feature/esg-document-crawler)
 - Environmental matrix E-draft v0.1, 16 criteria, AASB S2 and GRI 300, pending review
   (feature/esg-pillar-matrices)
 - Social matrix S-draft v0.1, 14 criteria, including data privacy and cyber security,
