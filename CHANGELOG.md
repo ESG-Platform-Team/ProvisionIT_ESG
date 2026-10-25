@@ -5,6 +5,8 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-26
+
 ### Added
 - Continuous deployment: after CI passes on main and the release is approved, GitHub Actions
   deploys to Cloudflare and runs a smoke test against the live site; rollback steps and release
