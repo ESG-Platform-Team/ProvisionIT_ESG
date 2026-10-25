@@ -18,6 +18,16 @@ Want the language model instead of keyword matching? Put your Gemini key in
 `backend/.env` and run `./demo.sh --reset --live`. Keyword mode is the safer
 demo because it does not depend on the API.
 
+Best of both: record Gemini once, then replay it.
+
+```
+./demo.sh --warm             # once, about two minutes, needs the key
+./demo.sh --reset --replay   # Gemini's findings, no API calls, seconds per run
+./demo.sh --reset --film     # the same, with the source log paced for recording
+```
+
+Replay works with no internet, so it is also the backup for a flaky room.
+
 ## 1. One search, three pillars (1 min)
 
 1. Type `TST` and leave all three pillar chips on: Governance, Environmental,

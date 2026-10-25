@@ -44,6 +44,19 @@ Demo
 Starts the fixture company, API and frontend in one go and opens
 http://localhost:8001. DEMO.md is the showcase script.
 
+Fast demo modes
+    ./demo.sh --warm            once, with a Gemini key: records the model's
+                                answers for TST (about two minutes)
+    ./demo.sh --reset --replay  answers from that recording only: no API
+                                calls, no key, a full run in a few seconds
+    ./demo.sh --reset --film    replay, with the source log paced for a
+                                screen recording (DEMO_PACE=0.8 seconds a file)
+
+The fixture company runs on this machine, so the 1.5 second politeness pause
+between fetches is skipped for it; real company websites still get it. Replay
+shows genuine model output from the cache, keyed by the exact prompt; anything
+not recorded falls back to keyword matching and says so in the run log.
+
 Running it by hand
 Three terminals.
 
@@ -78,9 +91,18 @@ with no internet.
 Tests
     cd backend && python test_offline.py
 
-140 assertions, no network and no API key required. They cover the rules the
-client agreed to: scoring, the three pillars, the machine interpretation
-statement, the PDF, safe email, and the disclosure request lifecycle.
+Run every file with: for t in test_*.py; do python "$t" || exit 1; done
+
+270 assertions across 12 files, no network and no API key required. They
+cover the rules the client agreed to: scoring, the three pillars, the machine
+interpretation statement, the PDF, safe email, the disclosure request
+lifecycle, sign-in, and the fast demo modes.
+
+User acceptance testing
+PostHog records how Provision IT's team uses the platform: page views, clicks,
+session replays with every input and email address masked, a funnel from search
+to report, and an in-app survey. It is off until a project key is set in
+frontend/analytics.config.js. docs/analytics.md has the setup and the event list.
 
 Deploying
 The whole platform deploys to Cloudflare from one command: the website as
