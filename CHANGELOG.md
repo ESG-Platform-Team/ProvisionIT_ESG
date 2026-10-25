@@ -6,6 +6,14 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Sign in with JWT: HS256 tokens with issuer, audience, expiry and a unique id, revoked on
+  sign-out; salted PBKDF2 password hashes; every API route except health and sign-in needs a
+  token; reports and requests record who sent them and replies go to that person
+  (feature/auth-sign-in)
+- Relational database (SQLAlchemy): users, companies, assessment runs, pillar results, source
+  documents, disclosure requests with their items and documents, an email log and revoked
+  tokens, with foreign keys. SQLite locally, PostgreSQL via DATABASE_URL. Older databases are
+  imported automatically. Schema in docs/database.md (feature/auth-sign-in)
 - Disclosure requests: email a company the criteria public sources did not answer, with
   a due date, secure upload link and opt-out (feature/disclosure-requests)
 - Company response page; documents provided are re-assessed and graded C; a decline or
