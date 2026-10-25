@@ -158,8 +158,29 @@ async def health():
 
 
 @app.get("/api/companies", dependencies=AUTH)
-async def search_companies(q: str = ""):
-    return {"matches": companies.find(q)}
+async def search_companies(q: str = "", all: bool = False):
+    """Search by name, code or website; all=true returns every company on file."""
+    return {"matches": companies.all_companies() if all else companies.find(q)}
+
+
+class NewCompany(BaseModel):
+    name: str = ""
+    website: str
+    contactEmail: str = ""
+    sector: str = ""
+
+
+@app.post("/api/companies", status_code=201)
+async def add_company(body: NewCompany, user: dict = Depends(require_user)):
+    """Add a private (unlisted) company so it can be assessed and sent requests.
+    Adding a website that is already on file returns that company."""
+    try:
+        company = await asyncio.to_thread(companies.add_private, body.name, body.website,
+                                          body.contactEmail, body.sector,
+                                          user.get("userId") if user is not GUEST else None)
+    except companies.CompanyError as exc:
+        _err(400, "COMPANY_REJECTED", str(exc))
+    return company
 
 
 # --- Assessments -------------------------------------------------------------
@@ -301,7 +322,7 @@ async def email_report(run_id: str, body: EmailReport, user: dict = Depends(requ
              f"confidence {p['result']['confidence']}" for p in run.get("pillars", [])]
     text = (
         (body.message.strip() + "\n\n" if body.message else "")
-        + f"ESG disclosure assessment: {c['name']} (ASX: {c['asxCode']})\n"
+        + f"ESG disclosure assessment: {companies.label(c)}\n"
         f"Assessed {(run.get('completedAt') or '')[:10]}, run {run['runId']}\n\n"
         + "\n".join(lines)
         + "\n\nThe full report is attached as a PDF"
@@ -310,7 +331,7 @@ async def email_report(run_id: str, body: EmailReport, user: dict = Depends(requ
         + (f"Sent by {user['name']} ({user['email']}) via the Provision IT ESG platform\n"
            if user.get("email") else "Provision IT ESG platform\n")
     )
-    msg = mailer.build(to, f"ESG assessment: {c['name']} ({c['asxCode']})", text,
+    msg = mailer.build(to, f"ESG assessment: {companies.label(c)}", text,
                        html=_report_email_html(run, body.message, body.includeJson, user),
                        attachments=attachments,
                        reply_to=os.getenv("SMTP_REPLY_TO") or user.get("email") or None)
@@ -346,7 +367,7 @@ font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0E0F14">
 font-weight:700;letter-spacing:.02em">Provision IT &middot; ESG assessment</div>
 <div style="padding:24px">
 {note}
-<div style="font-size:20px;font-weight:800;margin-bottom:4px">{e(c['name'])} (ASX: {e(c['asxCode'])})</div>
+<div style="font-size:20px;font-weight:800;margin-bottom:4px">{e(companies.label(c))}</div>
 <div style="font-size:13px;color:#5A5F6D;margin-bottom:18px">Assessed
 {e((run.get('completedAt') or '')[:10])} &middot; run {e(run['runId'])}</div>
 <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:18px">

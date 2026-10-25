@@ -191,8 +191,10 @@ def _cover(run: dict, st: dict) -> list:
            Spacer(1, 4),
            Paragraph(_clean(c["name"]).upper(), st["title"]),
            Spacer(1, 6),
-           Paragraph(_clean(f"ASX: {c['asxCode']}  /  {c.get('sector', '')}  /  "
-                            f"{c.get('tier', '')}  /  assessed {date}").upper(), st["kicker"]),
+           Paragraph(_clean("  /  ".join(x for x in [
+               f"ASX: {c['asxCode']}" if c.get("listed", True) else "Private company",
+               c.get("sector") or "", c.get("tier") or "", f"assessed {date}"] if x)).upper(),
+               st["kicker"]),
            Spacer(1, 12 * mm)]
 
     rows = [[Paragraph(h, st["kicker"]) for h in
