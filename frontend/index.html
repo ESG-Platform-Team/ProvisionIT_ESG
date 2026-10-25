@@ -44,6 +44,12 @@
         </sc-for>
       </div>
       <div style="flex:1"></div>
+      <sc-if value="{{ userChip.on }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:13px;color:#C6CAD4">{{ userChip.name }}</span>
+          <button onClick="{{ doSignOut }}" style="background:transparent;border:none;color:#8A8F9C;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:6px 2px" style-hover="color:#F4BF3F">Sign out</button>
+        </div>
+      </sc-if>
       <button onClick="{{ toggleLive }}" style="display:flex;align-items:center;gap:9px;background:transparent;border:1px solid {{ live.bd }};padding:7px 12px;cursor:pointer;transition:border-color .2s">
         <span style="width:7px;height:7px;border-radius:50%;background:{{ live.dot }}"></span>
         <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ live.fg }}">{{ live.label }}</span>
@@ -51,14 +57,44 @@
     </div>
   </div>
 
+  <!-- ============ SIGN IN ============ -->
+  <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ false }}">
+  <div style="background:radial-gradient(120% 90% at 78% 0%,#20232F 0%,#0E0F14 58%);min-height:calc(100vh - 66px);display:flex;align-items:center;justify-content:center;padding:64px 24px">
+    <div style="width:100%;max-width:440px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:18px">{{ authView.kicker }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:40px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 12px">{{ authView.title }}</h1>
+      <p style="font-size:14.5px;line-height:1.65;color:#9AA0AE;margin:0 0 10px">{{ authView.lede }}</p>
+      <form onSubmit="{{ authSubmit }}" style="background:#0E0F14;border:1px solid #2E323F;padding:8px 28px 28px;margin-top:22px">
+        <sc-if value="{{ authView.signup }}" hint-placeholder-val="{{ false }}">
+          <label for="auth-name" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Name</label>
+          <input id="auth-name" value="{{ authName }}" onChange="{{ onAuthName }}" autocomplete="name" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
+        </sc-if>
+        <label for="auth-email" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Email</label>
+        <input id="auth-email" type="email" value="{{ authEmail }}" onChange="{{ onAuthEmail }}" autocomplete="email" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
+        <label for="auth-password" style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin:18px 0 8px">Password</label>
+        <input id="auth-password" type="password" value="{{ authPassword }}" onChange="{{ onAuthPassword }}" autocomplete="{{ authView.pwComplete }}" style="width:100%;box-sizing:border-box;background:#171922;border:1px solid #2E323F;color:#F4F5F7;font-size:14.5px;padding:13px 14px;outline:none">
+        <sc-if value="{{ authView.signup }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12px;color:#6A6F7D;margin-top:8px">At least 10 characters.</div>
+        </sc-if>
+        <sc-if value="{{ authView.hasError }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="border-left:3px solid #E5484D;background:rgba(229,72,77,.08);color:#F4C7C8;font-size:13px;line-height:1.5;padding:10px 12px;margin-top:16px">{{ authView.error }}</div>
+        </sc-if>
+        <button type="submit" style="width:100%;margin-top:22px;background:#F4BF3F;border:none;color:#0E0F14;padding:15px 18px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:{{ authView.btnOpacity }}">{{ authView.button }}</button>
+      </form>
+      <button onClick="{{ authSwitch }}" style="margin-top:18px;background:transparent;border:none;color:#9AA0AE;cursor:pointer;font-size:13.5px;padding:4px 0" style-hover="color:#F4BF3F">{{ authView.switchLabel }}</button>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#565C6C;margin-top:26px;line-height:1.8">Companies answering a request never sign in.<br>Their email link is their access.</div>
+    </div>
+  </div>
+  </sc-if>
+
   <!-- ============ SEARCH ============ -->
   <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ true }}">
   <div>
     <div style="background:radial-gradient(120% 90% at 78% 0%,#20232F 0%,#0E0F14 58%);padding:104px 32px 48px;position:relative;overflow:hidden">
       <div style="max-width:960px;margin:0 auto;position:relative">
-        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Governance · ASX listed entities</div>
+        <div data-reveal="1" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#F4BF3F;margin-bottom:26px">Environmental · Social · Governance · ASX listed entities</div>
         <h1 data-reveal="1" style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(40px,6.4vw,66px);line-height:.97;letter-spacing:-.012em;text-transform:uppercase;color:#F4F5F7;margin:0 0 22px;max-width:19ch;text-wrap:pretty">Every claim, back to the page it came from</h1>
-        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an Australian listed entity, or paste a company website. We retrieve what is publicly and freely available, assess it against the ASX Corporate Governance Council Principles, and link every finding to the passage it rests on.</p>
+        <p data-reveal="1" style="font-size:16px;line-height:1.65;color:#9AA0AE;max-width:60ch;margin:0 0 38px">Enter an Australian listed entity, or paste a company website. We retrieve what is publicly and freely available, assess governance against the ASX Corporate Governance Council Principles and environmental and social disclosure against AASB S2 and Australian reporting regimes, and link every finding to the passage it rests on.</p>
 
         <div data-reveal="1" style="max-width:780px;position:relative">
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -84,6 +120,17 @@
           </sc-if>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin:14px 0 34px">{{ fieldNote }}</div>
         </div>
+
+        <sc-if value="{{ live.on }}" hint-placeholder-val="{{ true }}">
+        <div data-reveal="1" style="margin:-8px 0 34px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Pillars to assess · {{ pillarCount }}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{ pillarChips }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.toggle }}" style="cursor:pointer;padding:9px 18px;border-radius:999px;font-size:12.5px;background:{{ c.bg }};border:1px solid {{ c.bd }};color:{{ c.fg }};transition:all .2s" style-hover="border-color:#F4BF3F">{{ c.name }}</button>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
 
         <div data-reveal="1">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6E7383;margin-bottom:12px">Narrow the profile · {{ chipCount }}</div>
@@ -141,7 +188,7 @@
         <span style="width:9px;height:9px;border-radius:50%;background:#F4BF3F;animation:{{ run.anim }}"></span>
         <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#F4BF3F">{{ run.stage }}</span>
       </div>
-      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:46px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 10px">Retrieving sources</h1>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:46px;line-height:1;text-transform:uppercase;color:#F4F5F7;margin:0 0 10px">{{ run.title }}</h1>
       <div style="font-size:16px;color:#9AA0AE;margin-bottom:6px">{{ run.company }}</div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#565C6C;margin-bottom:40px">{{ run.meta }}</div>
 
@@ -187,7 +234,7 @@
           </div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6E7383;margin-bottom:8px">Governance band</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6E7383;margin-bottom:8px">{{ a.bandLabel }}</div>
           <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(30px,4.4vw,44px);line-height:1;text-transform:uppercase;color:#F4BF3F;margin-bottom:14px">{{ a.band }}</div>
           <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
             <div style="width:30px;height:30px;border-radius:50%;border:1px solid #565C6C;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#F4F5F7">{{ a.conf }}</div>
@@ -195,6 +242,16 @@
           </div>
         </div>
       </div>
+      <sc-if value="{{ a.hasPillars }}" hint-placeholder-val="{{ true }}">
+      <div style="max-width:1240px;margin:30px auto 0;display:flex;gap:10px;flex-wrap:wrap">
+        <sc-for list="{{ a.pillarTabs }}" as="t" hint-placeholder-count="3">
+          <button onClick="{{ t.go }}" style="background:{{ t.bg }};border:1px solid {{ t.bd }};color:{{ t.fg }};padding:11px 18px;cursor:pointer;display:flex;gap:14px;align-items:baseline;transition:border-color .2s" style-hover="border-color:#F4BF3F">
+            <span style="font-family:Archivo,sans-serif;font-weight:700;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase">{{ t.name }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ t.sub }}">{{ t.band }} · {{ t.conf }}</span>
+          </button>
+        </sc-for>
+      </div>
+      </sc-if>
     </div>
 
     <div style="background:#F4F5F7;padding:0 32px 80px">
@@ -207,6 +264,20 @@
               <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C;line-height:1.6">{{ s.k }}</div>
             </div>
           </sc-for>
+        </div>
+
+        <div style="background:#FDF3D8;border-left:3px solid #F4BF3F;padding:18px 22px;margin:-16px 0 40px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A6A12;margin-bottom:8px">{{ a.interpTitle }}</div>
+          <div style="font-size:13.5px;line-height:1.65;color:#0E0F14;max-width:118ch">{{ a.interpretation }}</div>
+          <sc-if value="{{ a.hasInterpNote }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;line-height:1.6;color:#4A4E5C;margin-top:8px;max-width:118ch">{{ a.interpNote }}</div>
+          </sc-if>
+          <sc-if value="{{ a.hasDecline }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;line-height:1.6;color:#0E0F14;margin-top:10px;font-weight:600">Not rated: {{ a.declineReason }}</div>
+          </sc-if>
+          <sc-if value="{{ a.isDraft }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A6A12;margin-top:10px">{{ a.draftNote }}</div>
+          </sc-if>
         </div>
 
         <div style="display:grid;grid-template-columns:minmax(340px,1fr) minmax(320px,420px);gap:40px;align-items:start;margin-bottom:56px">
@@ -234,7 +305,7 @@
         </div>
 
         <div data-reveal="1" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:18px">
-          <h2 style="font-family:Archivo,sans-serif;font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;color:#0E0F14;margin:0">The eight principles</h2>
+          <h2 style="font-family:Archivo,sans-serif;font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;color:#0E0F14;margin:0">{{ a.sectionTitle }}</h2>
           <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
             <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
               <div style="display:flex;align-items:center;gap:8px">
@@ -275,6 +346,9 @@
                           </span>
                           <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#A0A5B2">{{ f.note }}</span>
                         </div>
+                        <sc-if value="{{ f.hasReq }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#8A6A12;margin-bottom:10px">{{ f.req }}</div>
+                        </sc-if>
                         <div style="display:flex;gap:8px;flex-wrap:wrap">
                           <sc-for list="{{ f.sources }}" as="s" hint-placeholder-count="2">
                             <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid #DCDEE4;border-radius:999px;background:#fff;transition:border-color .18s,transform .18s" style-hover="border-color:#0E0F14;transform:translateY(-1px)">
@@ -294,10 +368,47 @@
 
         <div data-reveal="1" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:32px">
           <button onClick="{{ exportJson }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Export JSON</button>
-          <button onClick="{{ exportPdf }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Export PDF</button>
+          <button onClick="{{ exportPdf }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">{{ pdfLabel }}</button>
+          <sc-if value="{{ canEmail }}" hint-placeholder-val="{{ true }}">
+            <span style="display:contents">
+            <button onClick="{{ toggleMail }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Email report</button>
+            <button onClick="{{ toggleReq }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Request missing disclosures</button>
+            </span>
+          </sc-if>
           <button onClick="{{ goHistory }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Compare with last assessment</button>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">{{ exportNote }}</span>
         </div>
+
+        <sc-if value="{{ mail.open }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:18px;background:#fff;border:1px solid #DCDEE4;padding:20px 22px;max-width:820px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin-bottom:12px">Email the PDF report, with the JSON result attached</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+              <input value="{{ mail.to }}" onChange="{{ onMailTo }}" placeholder="name@company.com.au, colleague@company.com.au" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none">
+              <button onClick="{{ sendMail }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:12px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">Send report</button>
+            </div>
+            <input value="{{ mail.msg }}" onChange="{{ onMailMsg }}" placeholder="Optional message to include" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none;width:100%">
+            <div style="font-size:12.5px;line-height:1.6;color:#4A4E5C;margin-top:12px">{{ mail.status }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ req.open }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:18px;background:#fff;border:1px solid #DCDEE4;padding:20px 22px;max-width:820px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8A8F9C;margin-bottom:12px">Ask the company for what public sources did not answer · {{ req.count }}</div>
+            <p style="font-size:13px;line-height:1.65;color:#4A4E5C;margin:0 0 14px">The company receives a list of the unanswered criteria and a secure link to upload documents or decline. Anything supplied is recorded as provided on request and graded below a published document. No answer by the due date is recorded, and those criteria stay as insufficient information rather than scoring zero.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+              <input value="{{ req.email }}" onChange="{{ onReqEmail }}" placeholder="Company secretary or investor relations email" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none">
+              <input value="{{ req.by }}" onChange="{{ onReqBy }}" placeholder="Requested by (your name)" style="flex:1;min-width:240px;background:#fff;border:1px solid #C6CAD4;color:#0E0F14;font-size:13.5px;padding:12px 14px;outline:none">
+            </div>
+            <button onClick="{{ sendReq }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:12px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase">Send request</button>
+            <div style="font-size:12.5px;line-height:1.6;color:#4A4E5C;margin-top:12px">{{ req.status }}</div>
+            <sc-if value="{{ req.hasLink }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+                <button onClick="{{ openRespond }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Open the company's response page</button>
+                <button onClick="{{ goRequests }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:13px 22px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Track requests</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.8;letter-spacing:.06em;color:#8A8F9C;margin-top:18px;max-width:80ch">Sources were captured on {{ a.date }} and stored with the assessment, so this result can be reproduced exactly as issued.</div>
       </div>
     </div>
@@ -402,21 +513,21 @@
   <!-- ============ INSUFFICIENT EVIDENCE ============ -->
   <sc-if value="{{ isInsufficient }}" hint-placeholder-val="{{ true }}">
   <div style="background:#171922;min-height:calc(100vh - 66px);display:flex;align-items:center;justify-content:center;padding:64px 24px">
-    <div style="width:100%;max-width:620px;background:#0E0F14;border:1px solid #2E323F;padding:44px 44px 38px">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:22px">Result · Insufficient evidence</div>
-      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:36px;line-height:1.05;text-transform:uppercase;color:#F4F5F7;margin:0 0 18px">Not enough evidence to rate</h1>
+    <div style="width:100%;max-width:760px;background:#0E0F14;border:1px solid #2E323F;padding:44px 44px 38px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:22px">{{ ins.kicker }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:36px;line-height:1.05;text-transform:uppercase;color:#F4F5F7;margin:0 0 18px">{{ ins.title }}</h1>
       <p style="font-size:15px;line-height:1.7;color:#9AA0AE;margin:0 0 30px;max-width:56ch">{{ ins.sentence }}</p>
       <div style="border-top:1px solid #2E323F">
         <sc-for list="{{ ins.docs }}" as="d" hint-placeholder-count="5">
           <div style="display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:14px 0;border-bottom:1px solid #22252F">
-            <span style="font-size:14px;color:#E7E8EC">{{ d.name }}</span>
+            <span style="font-size:14px;line-height:1.5;color:#E7E8EC"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A8F9C;margin-right:10px">{{ d.code }}</span>{{ d.name }}<span style="display:block;font-size:12px;color:#8A8F9C;margin-top:4px">{{ d.note }}</span></span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:{{ d.color }};text-align:right;flex:none">{{ d.status }}</span>
           </div>
         </sc-for>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:30px">
-        <button onClick="{{ retry }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">Retry retrieval</button>
-        <button onClick="{{ addSource }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">Add a source manually</button>
+        <button onClick="{{ ins.primary }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">{{ ins.primaryLabel }}</button>
+        <button onClick="{{ ins.secondary }}" style="background:transparent;border:1px solid #565C6C;color:#F4F5F7;padding:14px 24px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#F4BF3F;color:#F4BF3F">{{ ins.secondaryLabel }}</button>
       </div>
       <sc-if value="{{ ins.adding }}" hint-placeholder-val="{{ false }}">
         <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -424,7 +535,44 @@
           <button onClick="{{ submitManual }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:13px 20px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase">Retrieve</button>
         </div>
       </sc-if>
-      <div style="font-size:12.5px;line-height:1.7;color:#565C6C;margin-top:24px">Declining to rate is a result, not a failure. The attempt, its date and the gaps are stored in history.</div>
+      <div style="font-size:12.5px;line-height:1.7;color:#565C6C;margin-top:24px">{{ ins.foot }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ DISCLOSURE REQUESTS ============ -->
+  <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#F4F5F7;min-height:calc(100vh - 66px);padding:64px 32px 96px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A8F9C;margin-bottom:16px">Disclosure requests · {{ requestsCount }}</div>
+      <h1 style="font-family:Archivo,sans-serif;font-weight:800;font-size:42px;line-height:1;text-transform:uppercase;color:#0E0F14;margin:0 0 12px">Requests</h1>
+      <p style="font-size:14.5px;line-height:1.7;color:#5A5F6D;max-width:66ch;margin:0 0 36px">Information asked for directly from companies where public sources were silent. Every request, answer, refusal and lapse is recorded, so the report always says how a gap came to be. A request with no answer by its due date leaves those criteria as insufficient information; it never scores them as zero.</p>
+      <div style="background:#fff;border:1px solid #DCDEE4">
+        <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:14px 22px;border-bottom:1px solid #DCDEE4;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8F9C">
+          <span>Company</span><span>Sent</span><span>Due</span><span>Status</span><span>Items</span><span></span>
+        </div>
+        <sc-for list="{{ requests }}" as="r" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:1.8fr .9fr .9fr 1.3fr .8fr 2fr;gap:14px;padding:16px 22px;border-bottom:1px solid #EDEEF1;align-items:center">
+            <span>
+              <span style="display:block;font-size:14px;color:#0E0F14;font-weight:500">{{ r.name }}</span>
+              <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#8A8F9C;margin-top:4px">{{ r.code }} · {{ r.contact }}</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.sent }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.due }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:{{ r.color }}">{{ r.status }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4E5C">{{ r.items }}</span>
+            <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+              <sc-if value="{{ r.canOpen }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.open }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Response page</button></sc-if>
+              <sc-if value="{{ r.canOpen }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.close }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s" style-hover="background:#0E0F14;color:#F4F5F7">Close, no response</button></sc-if>
+              <button onClick="{{ r.reassess }}" style="background:transparent;border:1px solid #0E0F14;color:#0E0F14;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;transition:all .18s;background:#F4BF3F;border-color:#F4BF3F" style-hover="background:#E2A61E">Re-assess</button>
+            </span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ requestsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px;font-size:13.5px;color:#6A6F7D">No requests yet. Run a live assessment, then use Request missing disclosures on the assessment screen.</div>
+        </sc-if>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C;margin-top:18px">{{ requestsNote }}</div>
     </div>
   </div>
   </sc-if>
@@ -457,7 +605,7 @@
         </sc-for>
       </div>
       <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8F9C">
-        <span>MFG assessed twice — Developing C → Established B under a newer matrix</span>
+        <span>{{ historyNote }}</span>
       </div>
     </div>
   </div>
@@ -466,7 +614,7 @@
   <div style="background:#0E0F14;border-top:1px solid #2E323F;padding:28px 32px">
     <div style="max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#565C6C">
       <span>Provision IT · Melbourne · since 2006</span>
-      <span>Free public sources only · bands not scores · every claim linked</span>
+      <span>Free public sources only · machine-formed, stated as such · every claim linked</span>
     </div>
   </div>
 </div>
@@ -531,8 +679,20 @@ const C = [
 // Maps a completed backend assessment onto the exact shape assess() returns, so
 // every screen renders live data without a single component change. If this
 // function is correct, nothing else in the page needs to know the backend exists.
-function assessFromApi(payload) {
-  const res = payload.result || {};
+const PILLAR_ORDER = ["GOVERNANCE", "ENVIRONMENTAL", "SOCIAL"];
+const UNIT_TITLE = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight" };
+
+function pillarOf(payload, key) {
+  const list = payload.pillars && payload.pillars.length ? payload.pillars : [{
+    pillar: "GOVERNANCE", label: "Governance", matrixVersion: payload.matrixVersion,
+    unitName: "Principle", draft: false, result: payload.result, principles: payload.principles
+  }];
+  return list.find(p => p.pillar === key) || list[0];
+}
+
+function assessFromApi(payload, pillarKey) {
+  const pillar = pillarOf(payload, pillarKey);
+  const res = pillar.result || {};
   const counts = res.counts || {};
   const declined = res.band === "INSUFFICIENT_EVIDENCE";
 
@@ -549,7 +709,7 @@ function assessFromApi(payload) {
     INSUFFICIENT_EVIDENCE: "Not rated", DEPARTS_EXPLAINED: "Departs, explained"
   };
 
-  const principles = (payload.principles || []).map(p => {
+  const principles = (pillar.principles || []).map(p => {
     const findings = (p.criteria || []).map(row => {
       const state = STATE[row.status] || "Not retrieved";
       const departs = state === "Departs, explained";
@@ -566,9 +726,12 @@ function assessFromApi(payload) {
         dots: dots(level, departs),
         sources: (row.evidence || []).map(e => ({
           g: e.sourceGrade || "C",
-          loc: e.locator || "location not recorded"
+          loc: (e.locator || "location not recorded")
+            + (e.provenance === "PROVIDED_ON_REQUEST" ? " · provided on request" : "")
         })),
         pillBg: pill.pillBg, pillFg: pill.pillFg, pillBd: pill.pillBd,
+        hasReq: !!row.disclosureRequest,
+        req: row.disclosureRequest ? row.disclosureRequest.note : "",
         level
       };
     });
@@ -604,12 +767,38 @@ function assessFromApi(payload) {
     delay: 0
   }));
 
+  const interp = payload.interpretation || {};
+  const all = payload.pillars && payload.pillars.length ? payload.pillars : [pillar];
+  const unit = (pillar.unitName || "Principle").toLowerCase();
+  const n = principles.length;
+
   return {
     name: payload.company.name,
     code: payload.company.asxCode,
     tier: payload.company.tier || "",
     managed: payload.company.sector || "",
-    matrix: payload.matrixVersion,
+    contactEmail: payload.company.contactEmail || "",
+    pillar: pillar.pillar,
+    bandLabel: (pillar.label || "Governance") + " band",
+    sectionTitle: "The " + (UNIT_TITLE[n] || n) + " " + unit + (n === 1 ? "" : "s"),
+    interpTitle: "Machine interpretation",
+    interpretation: interp.statement || "",
+    hasInterpNote: !!interp.note,
+    interpNote: interp.note || "",
+    isDraft: !!pillar.draft,
+    draftNote: pillar.draft ? "Draft matrix " + pillar.matrixVersion + " · criteria and bands are provisional pending review" : "",
+    hasDecline: declined,
+    hasPillars: all.length > 1,
+    pillarTabs: all.map(x => ({
+      key: x.pillar, name: x.label,
+      band: BAND[x.result.band] || "Not rated",
+      conf: x.result.band === "INSUFFICIENT_EVIDENCE" ? "\u2014" : x.result.confidence
+    })),
+    allDeclined: all.every(x => x.result.band === "INSUFFICIENT_EVIDENCE"),
+    requestable: all.reduce((a, x) => a + (x.principles || []).reduce((b, pr) =>
+      b + pr.criteria.filter(r => r.status === "EVIDENCE_GAP" || r.status === "NOT_DISCLOSED").length, 0), 0),
+    live: true,
+    matrix: pillar.matrixVersion,
     date: formatDate(payload.completedAt),
     band: BAND[res.band] || "Not rated",
     conf: declined ? "\u2014" : conf,
@@ -621,7 +810,7 @@ function assessFromApi(payload) {
     y: (practice / 4) * 100,
     xRead: declined ? "\u2014" : tPct + "%",
     yRead: declined ? "\u2014" : practice.toFixed(1),
-    stamp: payload.matrixVersion + " \u00b7 live retrieval",
+    stamp: pillar.matrixVersion + " \u00b7 live retrieval",
     stats: [
       { v: String(counts.criteriaInScope || 0), k: "Criteria in scope" },
       { v: String(counts.findingsEvidenced || 0), k: "Findings evidenced" },
@@ -641,7 +830,11 @@ function assessFromApi(payload) {
         cells: ramp(5, 5 - gradeIdx),
         note: "Primary documents carry grade A, secondary B, website text C. Retrieval failures and scans pull this down." }
     ],
-    retrieval
+    retrieval: retrieval.map(r => Object.assign(r, {
+      status: r.status,
+      mode: (payload.sourceLog || []).find(d => d.title === r.name && d.provenance === "PROVIDED_ON_REQUEST")
+        ? "provided on request" : r.mode
+    }))
   };
 
   function meanLevel(findings) {
@@ -743,7 +936,7 @@ function assess(co, retrieval) {
       const p = PILL[state];
       return { id, text, state, note, dots: dots(level, state === "Departs, explained"),
         sources: (sources || []).map(s => ({ g: s[0], loc: s[1] })),
-        pillBg: p.pillBg, pillFg: p.pillFg, pillBd: p.pillBd, level };
+        pillBg: p.pillBg, pillFg: p.pillFg, pillBd: p.pillBd, hasReq: false, req: "", level };
     });
     const scoped = findings.filter(f => f.state !== "Not required");
     const mean = scoped.length ? scoped.reduce((a, f) => a + f.level, 0) / scoped.length : 0;
@@ -766,9 +959,14 @@ function assess(co, retrieval) {
 
   return {
     name: co.name, code: co.code, tier: co.tier, managed: co.managed, matrix: co.matrix, date: today(),
+    pillar: "GOVERNANCE", bandLabel: "Governance band", sectionTitle: "The eight principles",
+    interpTitle: "Seeded demonstration data",
+    interpretation: "This is a seeded demonstration company. No documents were retrieved and no machine or person assessed it. Switch the toggle to Live backend for a real, machine-formed assessment.",
+    hasInterpNote: false, interpNote: "", isDraft: false, draftNote: "", hasDecline: false,
+    hasPillars: false, pillarTabs: [], allDeclined: retrievalRatio < 0.5, requestable: 0, live: false,
     band, conf, principles, insufficient: retrievalRatio < 0.5,
     x: transparency, y: (practice / 4) * 100, xRead: transparency + "%", yRead: practice.toFixed(1),
-    stamp: co.matrix + " · n=284 peers",
+    stamp: co.matrix + " · illustrative peers",
     stats: [
       { v: String(inScope + notReq), k: "Criteria in scope" },
       { v: String(evidenced), k: "Findings evidenced" },
@@ -790,14 +988,25 @@ function assess(co, retrieval) {
 
 class Component extends DCLogic {
   state = {
-    screen: "search", query: "", focused: false, live: false, progress: 0,
-    open: { "02": true, "08": true }, chips: { "ASX 300": true, "Internally managed": true },
+    screen: "search", query: "", focused: false, live: true, progress: 0,
+    open: { "01": true, "02": true, "08": true }, chips: { "ASX 300": true, "Internally managed": true },
     log: [], running: false, done: false, current: null, result: null, adding: false, manualUrl: "",
-    history: SEED_HISTORY
+    history: SEED_HISTORY,
+    // Live run payload straight from the API. When present it is the source of
+    // truth and the screens are re-derived from it for whichever pillar is open.
+    payload: null, pillarView: "GOVERNANCE",
+    pillarSel: { GOVERNANCE: true, ENVIRONMENTAL: true, SOCIAL: true },
+    mailOpen: false, mailTo: "", mailMsg: "", mailStatus: "",
+    reqOpen: false, reqEmail: "", reqBy: "", reqStatus: "", reqLink: "",
+    requests: [], requestsNote: "", liveHistory: [],
+    user: null, authMode: "signin", authName: "", authEmail: "", authPassword: "", authError: "", authBusy: false
   };
 
   componentDidMount() {
     Component.mounted = this;
+    this._onSignedOut = () => this.set({ user: null, screen: "signin", authError: "Your session ended. Sign in again." });
+    window.addEventListener("provision:signedout", this._onSignedOut);
+    if (this.state.live) this.checkAuth();
     import("./scraper.js").then(m => { this._mod = m; }).catch(e => console.error("[provision] scraper load failed", e));
     try {
       const raw = localStorage.getItem(STORE);
@@ -844,7 +1053,24 @@ class Component extends DCLogic {
     });
   }
 
-  go(s) { return () => { this.setState({ screen: s, focused: false }); window.scrollTo(0, 0); }; }
+  go(s) {
+    return () => {
+      // In live mode the assessment screens only show a real run. With nothing
+      // assessed yet, send the user to search instead of the seeded example.
+      const st = this.current().state;
+      if (st.live && !st.user && s !== "signin") {
+        this.set({ screen: "signin" });
+        return;
+      }
+      if (st.live && !st.payload && (s === "assessment" || s === "insufficient" || s === "retrieval")
+          && !st.running) {
+        this.setState({ screen: "search", focused: true, searchNote: "Search a company first, for example TST or BEN" });
+      } else {
+        this.setState({ screen: s, focused: false, searchNote: "" });
+      }
+      window.scrollTo(0, 0);
+    };
+  }
 
   resolveCompany(q) {
     const t = q.trim().toLowerCase();
@@ -868,33 +1094,55 @@ class Component extends DCLogic {
   }
 
   // Live run against the FastAPI backend. Same screens, real documents.
+  async api() {
+    return this._api || (this._api = await import("./backend.js"));
+  }
+
+  selectedPillars() {
+    const sel = this.current().state.pillarSel;
+    const keys = PILLAR_ORDER.filter(k => sel[k]);
+    return keys.length ? keys : ["GOVERNANCE"];
+  }
+
+  // Everything after a live run completes: history, screens, reset panels.
+  landPayload(payload) {
+    const first = (payload.pillarsRequested && payload.pillarsRequested[0]) || "GOVERNANCE";
+    const result = assessFromApi(payload, first);
+    const record = { name: result.name, code: result.code, date: result.date, runId: payload.runId,
+                     matrix: (payload.pillars || []).map(x => x.matrixVersion).join(" · ") || result.matrix,
+                     band: result.pillarTabs.map(t => t.band).join(" · "),
+                     conf: result.conf };
+    const history = [record].concat(this.current().state.history.filter(h => h.runId !== payload.runId));
+    try { localStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
+    this.set({ running: false, done: true, payload, pillarView: first, result, history,
+               log: result.retrieval, mailOpen: false, mailStatus: "", reqOpen: false,
+               reqStatus: "", reqLink: "", reqEmail: result.contactEmail || "" });
+  }
+
   async runViaApi(query) {
     const id = (this._runId = (this._runId || 0) + 1);
-    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null,
-               current: { name: query, code: query.toUpperCase().slice(0, 4), sources: [] } });
+    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null, payload: null,
+               current: { name: query, code: query.toUpperCase().slice(0, 4), tier: "", sources: [] }, runNote: "" });
     window.scrollTo(0, 0);
     try {
-      const api = this._api || (this._api = await import("./backend.js"));
+      const api = await this.api();
       const matches = await api.searchCompanies(query);
       if (!matches.length) throw new Error('The backend does not have "' + query + '". Try BEN, BHP or COL.');
       const co = matches[0];
       if (this._runId !== id) return;
-      this.set({ current: { name: co.name, code: co.asxCode, sources: [] } });
+      this.set({ current: { name: co.name, code: co.asxCode, tier: co.tier || co.sector || "", sources: [] } });
 
       const payload = await api.runAssessment(co.asxCode, p => {
         if (this._runId !== id) return;
-        this.set({ log: api.retrievalRows(p.sourceLog) });
-      });
+        const stageName = { QUEUED: "Starting", HARVEST: "Finding and downloading documents",
+          EXTRACT: "Reading documents", SCORE: "Scoring", AGGREGATE: "Finishing" }[p.stage] || "Working";
+        const last = (p.runLog || []).slice(-1)[0] || "";
+        this.set({ log: api.retrievalRows(p.sourceLog),
+                   runNote: stageName + " · " + Math.round((p.progress || 0) * 100) + "%" +
+                            (last ? " · " + last.slice(0, 70) : "") });
+      }, this.selectedPillars());
       if (this._runId !== id) return;
-
-      const result = assessFromApi(payload);
-      const record = { name: result.name, code: result.code, date: result.date,
-                       matrix: result.matrix,
-                       band: result.insufficient ? "Not rated" : result.band,
-                       conf: result.conf };
-      const history = [record].concat(this.current().state.history);
-      try { localStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
-      this.set({ running: false, done: true, result, history, log: result.retrieval });
+      this.landPayload(payload);
     } catch (err) {
       // Loud rather than silent. A demo that quietly shows seeded data while
       // claiming to be live is worse than one that stops and says why.
@@ -907,7 +1155,7 @@ class Component extends DCLogic {
 
   async run(co) {
     const id = (this._runId = (this._runId || 0) + 1);
-    this.set({ screen: "retrieval", running: true, done: false, log: [], current: co, result: null });
+    this.set({ screen: "retrieval", running: true, done: false, log: [], current: co, result: null, payload: null });
     window.scrollTo(0, 0);
     const out = [];
     try {
@@ -946,6 +1194,179 @@ class Component extends DCLogic {
     this.set({ running: false, done: true, result, history });
   }
 
+  async sendMail() {
+    const st = this.current().state;
+    if (!st.payload) return;
+    const to = (st.mailTo || "").trim();
+    if (!to) { this.set({ mailStatus: "Enter at least one email address." }); return; }
+    this.set({ mailStatus: "Sending…" });
+    try {
+      const api = await this.api();
+      const out = await api.emailReport(st.payload.runId, to, st.mailMsg || null);
+      this.set({ mailStatus: out.delivered ? "Sent to " + out.to + "." : out.note });
+    } catch (err) {
+      this.set({ mailStatus: "Not sent: " + (err.message || err) });
+    }
+  }
+
+  async sendReq() {
+    const st = this.current().state;
+    if (!st.payload) return;
+    const email = (st.reqEmail || "").trim();
+    if (!email) { this.set({ reqStatus: "Enter the company contact email." }); return; }
+    this.set({ reqStatus: "Sending…", reqLink: "" });
+    try {
+      const api = await this.api();
+      const out = await api.createRequest(st.payload.runId, email, st.reqBy || (st.user && st.user.name) || null, st.payload.pillarsRequested);
+      const d = out.delivery || {};
+      this.set({
+        reqStatus: "Request " + out.requestId + " covers " + out.criteria.length + " criteria, due " +
+          out.dueAt.slice(0, 10) + ". " + (d.delivered ? "Emailed to " + out.contactEmail + "." : d.note),
+        reqLink: out.responseUrl || ""
+      });
+    } catch (err) {
+      this.set({ reqStatus: "Not sent: " + (err.message || err) });
+    }
+  }
+
+  async loadRequests() {
+    if (!this.live()) { this.set({ requests: [], requestsNote: "Requests need the live backend." }); return; }
+    try {
+      const api = await this.api();
+      this.set({ requests: await api.listRequests(), requestsNote: "" });
+    } catch (err) {
+      this.set({ requestsNote: "Could not load requests: " + (err.message || err) });
+    }
+  }
+
+  async closeReq(id) {
+    try {
+      const api = await this.api();
+      await api.closeRequest(id);
+      await this.loadRequests();
+    } catch (err) { this.set({ requestsNote: "Could not close: " + (err.message || err) }); }
+  }
+
+  async reassessReq(r) {
+    const id = (this._runId = (this._runId || 0) + 1);
+    this.set({ screen: "retrieval", running: true, done: false, log: [], result: null, payload: null,
+               current: { name: r.company.name, code: r.company.asxCode, tier: "re-assessment", sources: [] } });
+    window.scrollTo(0, 0);
+    try {
+      const api = await this.api();
+      const payload = await api.reassess(r.requestId, p => {
+        if (this._runId !== id) return;
+        this.set({ log: api.retrievalRows(p.sourceLog) });
+      });
+      if (this._runId !== id) return;
+      this.landPayload(payload);
+    } catch (err) {
+      this.set({ running: false });
+      alert("Re-assessment failed.\n\n" + (err.message || err));
+    }
+  }
+
+  async checkAuth() {
+    try {
+      const api = await this.api();
+      const user = await api.me();
+      if (user) this.set({ user, screen: this.current().state.screen === "signin" ? "search" : this.current().state.screen });
+      else this.set({ user: null, screen: "signin" });
+    } catch (e) {
+      this.set({ user: null, screen: "signin" });
+    }
+  }
+
+  async submitAuth() {
+    const st = this.current().state;
+    if (st.authBusy) return;
+    this.set({ authBusy: true, authError: "" });
+    try {
+      const api = await this.api();
+      const user = st.authMode === "signup"
+        ? await api.signUp(st.authName, st.authEmail, st.authPassword)
+        : await api.signIn(st.authEmail, st.authPassword);
+      this.set({ user, authPassword: "", authBusy: false, screen: "search" });
+    } catch (err) {
+      this.set({ authBusy: false, authError: (err && err.message) || "Could not sign in" });
+    }
+  }
+
+  async signOut() {
+    const api = await this.api();
+    await api.signOut();
+    this.set({ user: null, payload: null, result: null, liveHistory: [], requests: [],
+               screen: "signin", authPassword: "", authError: "" });
+  }
+
+  async loadHistory() {
+    if (!this.live()) return;
+    try {
+      const api = await this.api();
+      const runs = await api.listRuns();
+      const title = b => (b || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      this.set({ liveHistory: runs.map(r => ({
+        runId: r.runId, name: r.company.name, code: r.company.asxCode,
+        date: (r.completedAt || "").slice(0, 10),
+        band: r.pillars.map(p => p.pillar[0] + " " + title(p.band)).join(" · "),
+        conf: (r.pillars[0] && r.pillars[0].confidence) || "\u2014",
+        matrix: r.pillars.map(p => p.matrixVersion).join(" · ")
+      })) });
+    } catch (err) {
+      console.error("[provision] history load failed", err);
+    }
+  }
+
+  // The live Insufficient screen: every criterion public sources did not
+  // answer, across all pillars, with what has been done about it.
+  liveInsufficient(st, a) {
+    const p = st.payload;
+    const declined = (p.pillars || []).filter(x => x.result.band === "INSUFFICIENT_EVIDENCE");
+    const rows = [];
+    for (const pl of p.pillars || []) {
+      for (const pr of pl.principles) {
+        for (const r of pr.criteria) {
+          if (r.status !== "EVIDENCE_GAP" && r.status !== "NOT_DISCLOSED") continue;
+          rows.push({
+            code: r.criterionCode, name: r.question,
+            note: (r.disclosureRequest && r.disclosureRequest.note) || (pl.label + " · " +
+              (r.status === "EVIDENCE_GAP" ? "the source that would answer this was not retrieved" : "not found in the retrieved documents")),
+            status: r.status === "EVIDENCE_GAP" ? "Not retrieved" : "Not disclosed",
+            color: r.status === "EVIDENCE_GAP" ? "#F4BF3F" : "#9AA0AE"
+          });
+        }
+      }
+    }
+    const name = p.company.name;
+    const openReq = () => {
+      this.go("assessment")();
+      this.set({ reqOpen: true, mailOpen: false });
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 150);
+    };
+    return {
+      kicker: "Insufficient information · " + rows.length + " criteria",
+      title: declined.length ? "Not enough evidence to rate " + declined.map(x => x.label).join(", ") : "What public sources did not answer",
+      sentence: (declined.length ? declined.map(x => x.result.declineReason).filter(Boolean).join(" ") + " " : "") +
+        (rows.length ? "These are the criteria " + name + "'s published documents did not answer. They are reported as insufficient information, never as a zero, and can be requested from the company directly."
+          : "Public sources answered every criterion in scope for " + name + "."),
+      docs: rows, adding: false, url: "",
+      primary: openReq, primaryLabel: "Request missing disclosures",
+      secondary: () => { this.go("requests")(); this.loadRequests(); }, secondaryLabel: "Track requests",
+      foot: "Insufficient information describes what was available to us, not a finding against the company. Declining to rate is a result, not a failure."
+    };
+  }
+
+  async reopen(h) {
+    try {
+      const api = await this.api();
+      const payload = await api.getRun(h.runId);
+      this.landPayload(payload);
+      this.go("assessment")();
+    } catch (err) {
+      alert("Could not load that run.\n\n" + (err.message || err));
+    }
+  }
+
   // The DC runtime can hand rendering to a fresh logic instance mid-run; route all
   // state writes through whichever instance is currently mounted.
   current() { return Component.mounted || this; }
@@ -954,7 +1375,8 @@ class Component extends DCLogic {
 
   renderVals() {
     const st = this.state, sc = st.screen;
-    const result = st.result || assess(COMPANIES.MFG, COMPANIES.MFG.sources);
+    const result = st.payload ? assessFromApi(st.payload, st.pillarView)
+      : (st.result || assess(COMPANIES.MFG, COMPANIES.MFG.sources));
     const a = result;
     const tab = (name, key) => ({ name, go: this.go(key), line: sc === key ? AMB : "transparent", color: sc === key ? "#F4F5F7" : "#8A8F9C" });
 
@@ -981,7 +1403,9 @@ class Component extends DCLogic {
         timing: (s.ms || 0) + " ms · " + (s.bytes ? (s.bytes / 1000).toFixed(1) + " kB" : s.mode),
         anim: "pi-fade .4s ease" };
     });
-    const total = st.current ? st.current.sources.length : 13;
+    // Live runs do not know how many documents exist until discovery finishes,
+    // so the total is whatever has been logged so far.
+    const total = Math.max(1, st.current && st.current.sources.length ? st.current.sources.length : st.log.length);
     const retrievedN = st.log.filter(s => s.status === "retrieved" || s.status === "scan").length;
 
     const insDocs = (st.result ? st.result.retrieval : COMPANIES.TBH.sources).map(d => {
@@ -991,17 +1415,51 @@ class Component extends DCLogic {
 
     return {
       progress: st.progress,
-      tabs: [tab("Search","search"), tab("Retrieval","retrieval"), tab("Assessment","assessment"),
-             tab("Insufficient","insufficient"), tab("History","history")],
+      tabs: sc === "signin" ? [] : [tab("Search","search"), tab("Retrieval","retrieval"), tab("Assessment","assessment"),
+             tab("Insufficient","insufficient"), Object.assign(tab("History","history"), { go: () => { this.go("history")(); this.loadHistory(); } }),
+             Object.assign(tab("Requests","requests"), { go: () => { this.go("requests")(); this.loadRequests(); } })],
       isSearch: sc === "search", isRetrieval: sc === "retrieval", isAssessment: sc === "assessment",
       isMobile: sc === "mobile", isInsufficient: sc === "insufficient", isHistory: sc === "history",
-      goSearch: this.go("search"), goHistory: this.go("history"),
-      peerField: this.props.showPeerField ?? true,
+      isRequests: sc === "requests", isSignin: sc === "signin",
+      userChip: { on: !!(st.live && st.user), name: st.user ? st.user.name : "" },
+      doSignOut: () => this.signOut(),
+      authName: st.authName, authEmail: st.authEmail, authPassword: st.authPassword,
+      onAuthName: e => this.setState({ authName: e.target.value }),
+      onAuthEmail: e => this.setState({ authEmail: e.target.value }),
+      onAuthPassword: e => this.setState({ authPassword: e.target.value }),
+      authSubmit: e => { if (e && e.preventDefault) e.preventDefault(); this.submitAuth(); },
+      authSwitch: () => this.setState(s => ({ authMode: s.authMode === "signup" ? "signin" : "signup", authError: "" })),
+      authView: st.authMode === "signup"
+        ? { signup: true, kicker: "Provision IT · ESG platform", title: "Create account",
+            lede: "For Provision IT analysts and the project team. Your name goes on every report you email and every request you send.",
+            button: st.authBusy ? "Creating account…" : "Create account", switchLabel: "Already have an account? Sign in",
+            pwComplete: "new-password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 }
+        : { signup: false, kicker: "Provision IT · ESG platform", title: "Sign in",
+            lede: "Sign in to run assessments, email reports and request missing disclosures from companies.",
+            button: st.authBusy ? "Signing in…" : "Sign in", switchLabel: "New here? Create an account",
+            pwComplete: "current-password", error: st.authError, hasError: !!st.authError, btnOpacity: st.authBusy ? .6 : 1 },
+      goSearch: this.go("search"), goHistory: () => { this.go("history")(); this.loadHistory(); },
+      goRequests: () => { this.go("requests")(); this.loadRequests(); },
+      peerField: st.payload ? false : (this.props.showPeerField ?? true),
 
       live: st.live
-        ? { label: "Live backend on", dot: AMB, bd: AMB, fg: AMB }
-        : { label: "Seeded demo data", dot: "#565C6C", bd: "#2E323F", fg: "#8A8F9C" },
-      toggleLive: () => this.setState(s => ({ live: !s.live })),
+        ? { on: true, label: "Live backend on", dot: AMB, bd: AMB, fg: AMB }
+        : { on: false, label: "Seeded demo data", dot: "#565C6C", bd: "#2E323F", fg: "#8A8F9C" },
+      pillarChips: PILLAR_ORDER.map(k => {
+        const on = !!st.pillarSel[k];
+        const name = k.charAt(0) + k.slice(1).toLowerCase();
+        return { name, bg: on ? AMB : "transparent", bd: on ? AMB : "#2E323F", fg: on ? INK : "#9AA0AE",
+          toggle: () => this.setState(s => ({ pillarSel: Object.assign({}, s.pillarSel, { [k]: !s.pillarSel[k] }) })) };
+      }),
+      pillarCount: (() => {
+        const n = PILLAR_ORDER.filter(k => st.pillarSel[k]).length;
+        return n === 0 ? "none chosen, governance will run" : n + " of 3 · one harvest feeds all of them";
+      })(),
+      toggleLive: () => {
+        const goingLive = !st.live;
+        this.setState({ live: goingLive, screen: goingLive ? st.screen : (st.screen === "signin" ? "search" : st.screen) });
+        if (goingLive) this.checkAuth();
+      },
 
       query: st.query,
       onQuery: e => this.setState({ query: e.target.value, focused: true }),
@@ -1009,7 +1467,7 @@ class Component extends DCLogic {
       onKey: e => { if (e.key === "Enter") this.assessNow(); },
       hintCode: matches.length === 1 ? matches[0].code : (q ? String(matches.length) : ""),
       fieldNote: st.live
-        ? "Live mode · the backend harvests and assesses this company for real"
+        ? (st.searchNote || "Live mode · the backend harvests and assesses this company for real")
         : "Company name or ASX code · free public sources only",
       field: { bd: st.focused ? "#565C6C" : "#2E323F" },
       showSuggest: st.focused && st.query.length > 0,
@@ -1029,18 +1487,27 @@ class Component extends DCLogic {
       log,
       run: {
         company: st.current ? st.current.name : "—",
-        meta: (st.current ? st.current.code + " · " + st.current.tier : "") + " · " + today(),
+        meta: (st.current ? [st.current.code, st.current.tier].filter(Boolean).join(" · ") : "") + " · " + today(),
         stage: st.running ? "Step 2 of 3 · live source log" : (st.done ? "Retrieval complete" : "Idle"),
+        title: st.done && !st.running ? "Sources retrieved" : "Retrieving sources",
         anim: st.running ? "pi-ping 1.4s ease-out infinite" : "none",
         pct: Math.round((st.log.length / total) * 100),
         count: retrievedN + " of " + total + " retrieved",
-        mode: st.live ? "live fetch · r.jina.ai reader" : "stored capture · replayed with timings",
+        mode: st.live ? (st.running && st.runNote ? st.runNote : "live fetch · company website") : "stored capture · replayed with timings",
         done: st.done,
-        cta: st.result && st.result.insufficient ? "See why we declined" : "Open assessment"
+        cta: (st.payload ? a.allDeclined : (st.result && st.result.insufficient)) ? "See why we declined" : "Open assessment"
       },
-      openResult: () => this.go(st.result && st.result.insufficient ? "insufficient" : "assessment")(),
+      openResult: () => this.go((st.payload ? a.allDeclined : (st.result && st.result.insufficient)) ? "insufficient" : "assessment")(),
 
       a: Object.assign({}, a, {
+        pillarTabs: (a.pillarTabs || []).map(t => {
+          const on = t.key === (st.payload ? st.pillarView : "GOVERNANCE");
+          return Object.assign({}, t, {
+            go: () => this.setState({ pillarView: t.key, open: { "01": true, "02": true } }),
+            bg: on ? AMB : "transparent", bd: on ? AMB : "#2E323F", fg: on ? INK : "#E7E8EC",
+            sub: on ? DEEP : "#8A8F9C"
+          });
+        }),
         principles: a.principles.map(p => {
           const open = (this.props.expandAll ?? false) || !!st.open[p.n];
           return Object.assign({}, p, { open, caret: open ? "–" : "+",
@@ -1054,19 +1521,67 @@ class Component extends DCLogic {
         { name: "Not retrieved", bg: "transparent", bd: "#8A8F9C", style: "dotted" }
       ],
       exportJson: () => {
-        const blob = new Blob([JSON.stringify(a, (k, v) => (typeof v === "function" ? undefined : v), 2)], { type: "application/json" });
+        // Live runs export the API payload itself, the machine-readable result a
+        // downstream platform would consume. Seeded runs export the screen model.
+        const data = st.payload || a;
+        const blob = new Blob([JSON.stringify(data, (k, v) => (typeof v === "function" ? undefined : v), 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = url; link.download = a.code + "-governance-" + a.date.replace(/ /g, "-") + ".json";
+        link.href = url; link.download = a.code + "-esg-" + a.date.replace(/ /g, "-") + ".json";
         document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
       },
-      exportPdf: () => window.print(),
+      exportPdf: async () => {
+        if (!st.payload) { window.print(); return; }
+        const api = await this.api();
+        try {
+          await api.openReport(st.payload.runId, st.payload.company.asxCode + "-esg-assessment-" +
+            (st.payload.completedAt || "").slice(0, 10) + ".pdf");
+        } catch (err) { alert("Could not download the report.\n\n" + (err.message || err)); }
+      },
+      pdfLabel: st.payload ? "Download PDF report" : "Print / save PDF",
+      canEmail: !!st.payload,
+      mail: { open: st.mailOpen, to: st.mailTo, msg: st.mailMsg, status: st.mailStatus },
+      toggleMail: () => this.setState(s => ({ mailOpen: !s.mailOpen, reqOpen: false })),
+      onMailTo: e => this.setState({ mailTo: e.target.value }),
+      onMailMsg: e => this.setState({ mailMsg: e.target.value }),
+      sendMail: () => this.sendMail(),
+      req: { open: st.reqOpen, email: st.reqEmail, by: st.reqBy || (st.user ? st.user.name : ""), status: st.reqStatus,
+             hasLink: !!st.reqLink, count: (a.requestable || 0) + " unanswered criteria across the assessed pillars" },
+      toggleReq: () => this.setState(s => ({ reqOpen: !s.reqOpen, mailOpen: false })),
+      onReqEmail: e => this.setState({ reqEmail: e.target.value }),
+      onReqBy: e => this.setState({ reqBy: e.target.value }),
+      sendReq: () => this.sendReq(),
+      openRespond: () => { if (st.reqLink) window.open(st.reqLink, "_blank"); },
+
+      requests: st.requests.map(r => {
+        const label = { SENT: r.delivered ? "Awaiting response" : "Saved, not emailed",
+          RESPONDED: "Responded", DECLINED: "Declined", NO_RESPONSE: "No response" }[r.status] || r.status;
+        return {
+          name: r.company.name, code: r.company.asxCode, contact: r.contactEmail,
+          sent: (r.sentAt || "").slice(0, 10), due: (r.dueAt || "").slice(0, 10),
+          status: label + (r.documentsProvided ? " · " + r.documentsProvided + " docs" : ""),
+          color: r.status === "RESPONDED" ? INK : (r.status === "SENT" ? DEEP : "#8A8F9C"),
+          items: r.criteria.length + " · " + r.pillars.map(x => x[0]).join(" "),
+          canOpen: r.status === "SENT" && !!r.responseUrl,
+          open: () => window.open(r.responseUrl, "_blank"),
+          close: () => this.closeReq(r.requestId),
+          reassess: () => this.reassessReq(r)
+        };
+      }),
+      requestsCount: st.requests.length + " recorded",
+      requestsEmpty: st.requests.length === 0,
+      requestsNote: st.requestsNote || "Re-assess includes every document a company has supplied, marked as provided on request",
       exportNote: a.liveHits != null ? a.liveHits + " criteria matched in live text" : "Reproducible from the stored capture",
 
-      ins: {
-        sentence: (st.result ? "Two of the five expected documents were reached, and rating " + st.result.name + " on what remains would not be defensible — so we have not issued a band."
+      ins: st.payload ? this.liveInsufficient(st, a) : {
+        kicker: "Result · Insufficient evidence", title: "Not enough evidence to rate",
+        primary: () => this.run(st.current || COMPANIES.TBH), primaryLabel: "Retry retrieval",
+        secondary: () => this.setState(s => ({ adding: !s.adding })), secondaryLabel: "Add a source manually",
+        foot: "Declining to rate is a result, not a failure. The attempt, its date and the gaps are stored in history.",
+        sentence: (st.payload && a.hasDecline ? a.declineReason + " Rating " + a.name + " on what remains would not be defensible, so no band has been issued."
+          : st.result ? "Two of the five expected documents were reached, and rating " + st.result.name + " on what remains would not be defensible — so we have not issued a band."
           : "Two of the five expected documents were reached, and rating Torrens Bay Holdings on what remains would not be defensible — so we have not issued a band."),
-        docs: insDocs, adding: st.adding, url: st.manualUrl
+        docs: insDocs.map(d => Object.assign({ code: "", note: "" }, d)), adding: st.adding, url: st.manualUrl
       },
       retry: () => this.run(st.current || COMPANIES.TBH),
       addSource: () => this.setState(s => ({ adding: !s.adding })),
@@ -1087,18 +1602,23 @@ class Component extends DCLogic {
       ],
       gridNotes: [
         { k: "Amber asterisk", v: "Where the assessed company sits. Amber marks this company only — and, elsewhere, departures the company explained." },
-        { k: "Grey field", v: "284 ASX 300 entities assessed under the same matrix version, for position rather than ranking." },
+        { k: "Grey field", v: "Other companies assessed under the same matrix version, for position rather than ranking. Illustrative here; on a live run it appears once enough companies have been assessed." },
         { k: "Dashed guides", v: "The two axis readings that produced the point, taken straight from the findings below." },
         { k: "No colour coding", v: "Ratings use a monochrome ink ramp. A traffic light would imply a judgement the method does not make." }
       ],
-      history: st.history.map(h => ({
+      history: (st.live ? (st.liveHistory || []) : st.history).map(h => ({
         name: h.name, code: h.code, date: h.date, band: h.band, conf: h.conf, matrix: h.matrix,
         bandColor: h.band === "Not rated" || h.band === "Not evidenced" ? "#9AA0AE" : (h.conf === "B" || h.band === "Established" ? AMB : (h.band === "Leading" ? INK : "#6A6F7D")),
         confBd: h.conf === "—" ? "#E7E8EC" : "#B6BAC6", confFg: h.conf === "—" ? "#9AA0AE" : INK,
         rowBg: h.band === "Not rated" ? "#FAFAFB" : "#fff",
-        open: () => { const co = COMPANIES[h.code]; if (co) this.run(co); else this.go("history")(); }
+        open: () => {
+          if (h.runId && st.live) { this.reopen(h); return; }
+          const co = COMPANIES[h.code]; if (co) this.run(co); else this.go("history")();
+        }
       })),
-      historyCount: st.history.length + " records"
+      historyCount: (st.live ? (st.liveHistory || []).length : st.history.length) + " records",
+      historyNote: st.live ? ((st.liveHistory || []).length ? "Live runs are stored on the backend and reopen exactly as issued" : "No live runs yet. Assess a company and it appears here")
+        : "MFG assessed twice — Developing C → Established B under a newer matrix"
     };
   }
 

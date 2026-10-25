@@ -1,7 +1,10 @@
-ESG Governance Assessment Platform
+ESG Assessment Platform
 
-Rates ASX listed companies against the ASX Corporate Governance Council
-Principles and Recommendations, using free public sources only.
+Rates ASX listed companies on governance, environmental and social
+disclosure, using free public sources first. Governance follows the ASX
+Corporate Governance Council Principles and Recommendations. Environmental
+(AASB S2, GRI 300) and Social (Modern Slavery Act, WGEA, GRI 400, Privacy Act,
+cyber security) are v0.1 drafts pending review.
 
 Built for Provision IT Pty Ltd. COMP30022 IT Project, University of Melbourne.
 
@@ -10,6 +13,15 @@ Enter an ASX code. The platform crawls that company's public website, finds
 governance documents, extracts disclosures with a language model, scores them
 with deterministic code, and reports the result so every finding traces back to
 a quoted passage on a numbered page in a stored document.
+
+Every assessment is formed by software and says so: on screen, on every
+finding and in the PDF report. No analyst reviews it before it is shown.
+
+Reports are exported as PDF and can be emailed from the app. Where public
+sources are silent, an analyst can email the company a list of what is missing
+with a secure upload link. Anything supplied is marked "provided on request"
+and graded below published documents. No reply by the due date means the item
+is reported as insufficient information, never as a zero.
 
 Three properties the design protects:
 
@@ -25,8 +37,14 @@ Layout
     backend/    FastAPI service: harvest, extract, read, score
     frontend/   Six screen interface, static, no build step
 
-Running it
-Two terminals.
+Demo
+    ./demo.sh --reset
+
+Starts the fixture company, API and frontend in one go and opens
+http://localhost:8001. DEMO.md is the showcase script.
+
+Running it by hand
+Three terminals.
 
     cd backend
     python3 -m venv .venv && source .venv/bin/activate
@@ -36,9 +54,21 @@ Two terminals.
     uvicorn app.main:app --reload --port 8080
 
     cd frontend
-    python3 -m http.server 8000
+    python3 -m http.server 8001
 
-Open http://localhost:8000/ and switch the toggle to live backend.
+    cd backend/fixture-site
+    python3 -m http.server 8123
+
+Open http://localhost:8001/ and search TST for the offline fixture company.
+
+Everyone signs in first (JWT). The first time, create an account on the sign-in
+screen. Data lives in a relational database: SQLite locally, PostgreSQL via
+DATABASE_URL; the schema is in docs/database.md.
+
+Email is off by default: messages are saved to backend/data/mail and nothing
+leaves the machine. Set SMTP_HOST and the other SMTP_ variables in .env to
+deliver, and PUBLIC_BASE_URL to an address companies can reach so the upload
+link in a request works outside your laptop.
 
 backend/fixture-site is a test environment with real PDFs, one missing
 document and one path blocked by robots.txt, so the whole pipeline can run
@@ -47,8 +77,14 @@ with no internet.
 Tests
     cd backend && python test_offline.py
 
-Thirty one assertions, no network and no API key required. They cover the rules
-the client agreed to.
+140 assertions, no network and no API key required. They cover the rules the
+client agreed to: scoring, the three pillars, the machine interpretation
+statement, the PDF, safe email, and the disclosure request lifecycle.
+
+Contributing
+Read CONTRIBUTING.md before opening a pull request: branch naming, commit
+messages, pull request expectations and review. CHANGELOG.md records every
+change.
 
 Team
 Agam Johal (lead), Chen Yu Lin, Pulitha Wimalendra, Jun Hyun Cho, Toan Le.
