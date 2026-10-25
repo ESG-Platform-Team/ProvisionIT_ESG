@@ -6,6 +6,13 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- One crawl assesses any combination of Governance, Environmental and Social
+  (feature/multi-pillar-pipeline)
+- Machine interpretation statement on every run and every finding, as the client asked
+  (feature/multi-pillar-pipeline)
+- Runs stored in SQLite; GET /api/assessments lists history (feature/multi-pillar-
+  pipeline)
+- Gemini model gemini-3.6-flash with fallback models (feature/multi-pillar-pipeline)
 - Crawler recognises climate statements, modern slavery statements, WGEA reports,
   reconciliation action plans and privacy, environmental and supplier policies
   (feature/esg-document-crawler)
