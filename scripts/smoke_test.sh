@@ -24,7 +24,9 @@ check "API reports ok"                    '[ "$(field "[\"status\"]")" = "ok" ]'
 check "sign-in is required"               '[ "$(field "[\"authRequired\"]")" = "True" ]'
 check "governance matrix is final"        '[ "$(field "[\"pillars\"][0][\"draft\"]")" = "False" ]'
 check "three pillars are served"          '[ "$(field "[\"pillars\"].__len__()")" = "3" ]'
-check "the website loads"                 'curl -fsS --max-time 20 "$BASE/" | grep -q "Provision IT"'
+# Download the whole page first: piping curl into grep -q fails under pipefail
+# when grep stops reading early (curl: (23) Failure writing output).
+check "the website loads"                 'home=$(curl -fsS --max-time 20 "$BASE/") && grep -q "Provision IT" <<< "$home"'
 check "protected API refuses no token"    '[ "$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/assessments")" = "401" ]'
 check "unknown request token is a 404"    '[ "$(curl -s -o /dev/null -w "%{http_code}" "$BASE/respond/not-a-real-token-123456")" = "404" ]'
 
