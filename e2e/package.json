@@ -1,0 +1,12 @@
+{
+  "name": "provisionit-esg-e2e",
+  "private": true,
+  "description": "End-to-end browser tests for the analyst journey (Playwright + node:test).",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-reporter=spec --test-concurrency=1 journey.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

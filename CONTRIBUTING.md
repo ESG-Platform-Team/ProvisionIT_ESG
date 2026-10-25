@@ -138,6 +138,8 @@ updates that story's block, and a new story gets a new block.
 JavaScript (frontend):
 
 - No build step. `frontend/backend.js` is the only file that talks to the API.
+- Interface changes keep the browser tests in `e2e/` passing. With
+  `./demo.sh --reset` running: `cd e2e && npm install && npm test`.
 - Test changes in the browser with `./demo.sh --reset` against the fixture
   company (TST) before asking for review.
 
@@ -159,5 +161,5 @@ On GitHub, Settings > Branches > Add branch ruleset, for both `main` and
 
 - Require a pull request before merging, with 1 approval
 - Dismiss stale approvals when new commits are pushed
-- Require status checks to pass: `tests`
+- Require status checks to pass: `tests`, `e2e`, `checks`, `container`
 - Block force pushes and deletion
