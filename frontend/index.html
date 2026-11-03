@@ -948,7 +948,8 @@ function assessFromApi(payload, pillarKey) {
     loc: d.location,
     status: d.extractionMethod === "ocr" ? "scan"
       : (d.outcome === "RETRIEVED" ? "retrieved"
-        : d.outcome === "UNREADABLE" ? "unreadable" : "notfound"),
+        : d.outcome === "UNREADABLE" ? "unreadable"
+        : d.homePage && !d.httpStatus && d.outcome === "NOT_FOUND" ? "unreachable" : "notfound"),
     ms: d.elapsedMs || 0,
     mode: "live fetch",
     delay: 0
@@ -1694,6 +1695,10 @@ class Component extends DCLogic {
       }
     }
     const name = p.company.name;
+    // Nothing was read because the website itself failed, so the gaps say
+    // nothing about what the company publishes.
+    const home = (p.sourceLog || []).find(d => d.homePage);
+    const unreached = home && !(p.sourceLog || []).some(d => d.outcome === "RETRIEVED");
     const openReq = () => {
       let n = 0;
       for (const pl of p.pillars || []) for (const pr of pl.principles) for (const r of pr.criteria)
@@ -1704,7 +1709,10 @@ class Component extends DCLogic {
     return {
       kicker: "Insufficient information · " + rows.length + " criteria",
       title: declined.length ? "Not enough evidence to rate " + declined.map(x => x.label).join(", ") : "What public sources did not answer",
-      sentence: (declined.length ? declined.map(x => x.result.declineReason).filter(Boolean).join(" ") + " " : "") +
+      sentence: unreached
+        ? name + "'s website could not be " + (home.httpStatus || home.outcome === "BLOCKED" ? "read" : "reached") + (home.note ? " (" + home.note + ")" : "") +
+          ", so no documents were read and nothing could be rated. The criteria below are reported as insufficient information, never as a zero, and can be requested from the company directly."
+        : (declined.length ? declined.map(x => x.result.declineReason).filter(Boolean).join(" ") + " " : "") +
         (rows.length ? "These are the criteria " + name + "'s published documents did not answer. They are reported as insufficient information, never as a zero, and can be requested from the company directly."
           : "Public sources answered every criterion in scope for " + name + "."),
       docs: rows, adding: false, url: "",
@@ -1756,7 +1764,8 @@ class Component extends DCLogic {
       scan: { status: "Scanned, text recovered", dot: AMB, color: "#E7E8EC" },
       notfound: { status: "Not found on site", dot: "#565C6C", color: "#8A8F9C" },
       blocked: { status: "Blocked by browser", dot: "#565C6C", color: "#8A8F9C" },
-      unreadable: { status: "Scan unreadable", dot: "#565C6C", color: "#8A8F9C" }
+      unreadable: { status: "Scan unreadable", dot: "#565C6C", color: "#8A8F9C" },
+      unreachable: { status: "Site not reachable", dot: "#565C6C", color: "#8A8F9C" }
     };
     const log = st.log.map(s => {
       const m = statusMap[s.status] || statusMap.notfound;

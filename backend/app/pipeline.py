@@ -103,6 +103,20 @@ async def run_assessment(
         hv = harvest.Harvester(max_docs=max_docs)
 
         candidates = await hv.discover(client, company["website"])
+        documents: list[dict] = []
+        home = hv.home_task
+        if home is not None and home.status != "RETRIEVED":
+            # The home page is where discovery starts. If it failed, nothing
+            # was found because nothing could be read, and the source log has
+            # to say so rather than look empty.
+            entry = _entry("Company website home page", home.target_url, "webpage",
+                           _short_location(home.target_url), home.status)
+            entry.update({"httpStatus": home.http_status, "elapsedMs": home.elapsed_ms,
+                          "robotsAllowed": home.robots_allowed, "note": home.note,
+                          "homePage": True})
+            documents.append(entry)
+            state.source_log = documents
+            _log_doc(state, entry)
         for url in company.get("extraUrls") or []:
             candidates.append({
                 "url": url, "source_type": _guess_type(url),
@@ -113,7 +127,6 @@ async def run_assessment(
         state.progress = 0.1
 
         # --- Stage 2, fetch and extract -----------------------------------
-        documents: list[dict] = []
         texts: list[tuple[str, list[str], str]] = []
         titles_seen: dict[str, int] = {}
 

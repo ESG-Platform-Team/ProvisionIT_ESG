@@ -165,6 +165,9 @@ class Harvester:
         self.max_docs = max_docs
         self._last_hit: dict[str, float] = {}
         self.tasks: list[HarvestTask] = []
+        # The fetch of the company's home page, kept so a site that cannot be
+        # reached at all is reported in the source log instead of vanishing.
+        self.home_task: HarvestTask | None = None
 
     async def _polite_wait(self, url: str) -> None:
         if is_local(url):
@@ -236,6 +239,9 @@ class Harvester:
         Depth is deliberately two: the root, then any governance or investor hub
         page linked from it. Deeper crawling finds marginally more and costs a
         lot more requests against someone else's server.
+
+        The home page attempt is kept on self.home_task whatever its outcome, so
+        the caller can record a site that could not be reached.
         """
         found: dict[str, dict] = {}
         pages_to_scan = [root_url]
@@ -247,7 +253,9 @@ class Harvester:
                 if page in seen_pages:
                     continue
                 seen_pages.add(page)
-                _, doc = await self.fetch(client, page, "webpage", "")
+                task, doc = await self.fetch(client, page, "webpage", "")
+                if depth == 0 and page == root_url:
+                    self.home_task = task
                 if doc is None or "html" not in doc.media_type:
                     continue
                 soup = BeautifulSoup(doc.content, "lxml")

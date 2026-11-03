@@ -159,7 +159,7 @@ def score_run(findings_by_code: dict, documents: list, retrieval_failed: set[str
                 "value": None, "unit": "MATURITY_MEAN", "max": 4,
                 "basis": "Coverage too thin to report a practice figure",
             },
-            "declineReason": (
+            "declineReason": _unreachable_reason(documents) + (
                 f"Only {in_scope - gaps} of {in_scope} in-scope criteria could be "
                 f"reached, below the {int(MIN_COVERAGE_TO_RATE * 100)}% threshold "
                 "required to defend a band."
@@ -201,6 +201,23 @@ def score_run(findings_by_code: dict, documents: list, retrieval_failed: set[str
         "criterionResults": criterion_results,
         "principles": principle_summaries,
     }
+
+
+def _unreachable_reason(documents: list) -> str:
+    """When the company's home page failed and nothing at all was retrieved, the
+    decline is about reaching the website, not about what the company publishes,
+    and the reason says so. Empty otherwise."""
+    if any(d.get("outcome") == "RETRIEVED" for d in documents):
+        return ""
+    home = next((d for d in documents if d.get("homePage")), None)
+    if home is None:
+        return ""
+    why = f" ({home['note']})" if home.get("note") else ""
+    if home.get("outcome") == "BLOCKED":
+        return f"The company website does not allow our crawler{why}, so no documents were read. "
+    if home.get("httpStatus"):
+        return f"The company website did not serve its home page{why}, so no documents were read. "
+    return f"The company website could not be reached{why}, so no documents were read. "
 
 
 def _resolve(criterion: dict, raw: dict | None, retrieval_failed: bool) -> dict:

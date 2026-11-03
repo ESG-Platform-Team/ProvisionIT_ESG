@@ -293,7 +293,9 @@ export function retrievalRows(sourceLog) {
     name: d.title,
     loc: d.location,
     url: d.url,
-    status: d.extractionMethod === "ocr" ? "scan" : (OUTCOME[d.outcome] || "notfound"),
+    status: d.extractionMethod === "ocr" ? "scan"
+      : d.homePage && !d.httpStatus && d.outcome === "NOT_FOUND" ? "unreachable"
+      : (OUTCOME[d.outcome] || "notfound"),
     ms: d.elapsedMs || 0,
     mode: d.provenance === "PROVIDED_ON_REQUEST" ? "provided on request" : "live fetch",
     grade: d.sourceGrade,
