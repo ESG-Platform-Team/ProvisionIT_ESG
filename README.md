@@ -10,6 +10,9 @@ Built for Provision IT Pty Ltd. COMP30022 IT Project, University of Melbourne.
 
 **Live:** https://provisionit-esg.provisionit-esg.workers.dev (sign-in required)
 
+**New here? Start with [HANDOVER.md](HANDOVER.md):** setup, accounts and keys,
+deployment to Cloudflare or AWS, architecture, design system and support.
+
 ## What it does
 
 Enter an ASX code. The platform crawls that company's public website, finds
@@ -44,7 +47,7 @@ frontend/    Six screen interface, static, no build step
 cloudflare/  Worker that serves the site and runs the API as a container
 e2e/         Browser tests for the analyst journey
 scripts/     Secret scan and post-deploy smoke test
-docs/        Database schema and analytics setup
+docs/        Database schema, analytics setup, AWS deployment guide
 ```
 
 ## Demo
@@ -142,13 +145,20 @@ live site. To deploy by hand:
 cd cloudflare && npm install && npx wrangler deploy
 ```
 
-[DEPLOY.md](DEPLOY.md) has first-time setup, secrets and rollback.
+[DEPLOY.md](DEPLOY.md) has first-time setup, secrets and rollback. To run on
+AWS instead, follow [docs/deploy-aws.md](docs/deploy-aws.md)
+(`.github/workflows/deploy-aws.yml` automates it).
 
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: branch
 naming, commit messages, pull request expectations and review.
 [CHANGELOG.md](CHANGELOG.md) records every change.
+
+## Licence
+
+Owned by Provision IT Pty Ltd. See [LICENSE](LICENSE) and
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Team
 

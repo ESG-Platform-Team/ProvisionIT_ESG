@@ -9,7 +9,7 @@ name: Deploy
 #   Secrets and variables > Actions > New repository secret
 #     CLOUDFLARE_API_TOKEN   token with "Edit Cloudflare Workers" permission
 #     CLOUDFLARE_ACCOUNT_ID  from the Cloudflare dashboard sidebar
-#   Environments > New environment "production" > Required reviewers: Agam
+#   Environments > New environment "production" > Required reviewers: a Provision IT maintainer
 # App secrets (DATABASE_URL, JWT_SECRET, GEMINI_API_KEY, SMTP_*) stay in
 # Cloudflare (npx wrangler secret put ...) and are never stored in GitHub.
 
