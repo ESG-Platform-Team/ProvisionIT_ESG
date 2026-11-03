@@ -11,8 +11,7 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Handover pack for Provision IT: HANDOVER.md (setup, accounts and keys, Cloudflare and AWS
   deployment, architecture, algorithms, database, design system, user manual, outstanding items,
   maintenance and contacts), AWS deployment guide (docs/deploy-aws.md) and a manual AWS deploy
-  workflow using OpenID Connect, LICENSE assigning ownership to Provision IT Pty Ltd, and
-  THIRD_PARTY_LICENSES.md (docs/handover)
+  workflow using OpenID Connect, LICENSE, and THIRD_PARTY_LICENSES.md (docs/handover)
 
 ### Changed
 - Each matrix module declares whether it is a draft with an explicit DRAFT flag (governance no,
@@ -20,6 +19,9 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   "draft" in the version name. Output fields are unchanged (fix/ESG-43-explicit-draft-flag)
 
 ### Fixed
+- LICENSE, README and HANDOVER.md now follow the COMP30022 Student Deed: the team's IP goes
+  to the University of Melbourne, which gives it to Provision IT by agreement
+  (docs/licence-student-deed)
 - A company website that cannot be reached is recorded in the source log as not found, with the
   error type, instead of leaving the log empty; the decline reason and the Insufficient screen
   say the site could not be reached rather than that its published documents did not answer

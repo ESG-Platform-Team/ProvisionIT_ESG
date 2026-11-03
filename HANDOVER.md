@@ -10,7 +10,7 @@ anyone who runs, changes or deploys the platform after the semester.
 | Code | This repository. Release **v1.3.0** is the handover release |
 | Project documentation | [Confluence space](https://provisionitesg.atlassian.net/wiki/spaces/PEP), with a [Handover page](https://provisionitesg.atlassian.net/wiki/spaces/PEP/pages/18612227) linking here |
 | Task history | [Jira board](https://provisionitesg.atlassian.net/jira/software/projects/ESG/boards/2) |
-| Owner | Provision IT Pty Ltd ([LICENSE](LICENSE)) |
+| Intellectual property | Assigned by the team to the University of Melbourne under the subject's Student Deed; the University gives it to Provision IT by agreement ([LICENSE](LICENSE)) |
 | Support | Agam Johal, free maintenance until **2 May 2027** ([section 15](#15-maintenance-and-contact)) |
 | Team | Agam Johal (lead), Chen Yu Lin, Pulitha Wimalendra, Jun Hyun Cho, Toan Le |
 | Client | Mick Both, with Chris (CEO) and Adam, Provision IT |
@@ -509,7 +509,8 @@ If Provision IT does not keep the Atlassian site, export the space as PDF
 - Every change since the first release, by version and sprint:
   [CHANGELOG.md](CHANGELOG.md). Releases are tagged on GitHub (v1.2.0 Sprint 2,
   v1.3.0 handover).
-- Ownership and licence: [LICENSE](LICENSE). The code belongs to Provision IT
-  Pty Ltd.
+- Ownership and licence: [LICENSE](LICENSE). The team assigned its IP to the
+  University of Melbourne under the COMP30022 Student Deed; the University's
+  agreement with Provision IT gives Provision IT the IP.
 - Open-source components and their licences:
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

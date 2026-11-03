@@ -157,7 +157,9 @@ naming, commit messages, pull request expectations and review.
 
 ## Licence
 
-Owned by Provision IT Pty Ltd. See [LICENSE](LICENSE) and
+Built for Provision IT Pty Ltd. Intellectual property passes from the team to
+the University of Melbourne under the COMP30022 Student Deed, and from the
+University to Provision IT by agreement. See [LICENSE](LICENSE) and
 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Team
