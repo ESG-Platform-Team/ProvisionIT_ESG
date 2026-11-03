@@ -5,12 +5,38 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-04
+
 ### Added
 - Handover pack for Provision IT: HANDOVER.md (setup, accounts and keys, Cloudflare and AWS
   deployment, architecture, algorithms, database, design system, user manual, outstanding items,
   maintenance and contacts), AWS deployment guide (docs/deploy-aws.md) and a manual AWS deploy
   workflow using OpenID Connect, LICENSE assigning ownership to Provision IT Pty Ltd, and
   THIRD_PARTY_LICENSES.md (docs/handover)
+
+### Changed
+- Each matrix module declares whether it is a draft with an explicit DRAFT flag (governance no,
+  environmental and social yes); the pillar registry reads the flag instead of looking for
+  "draft" in the version name. Output fields are unchanged (fix/ESG-43-explicit-draft-flag)
+
+### Fixed
+- A company website that cannot be reached is recorded in the source log as not found, with the
+  error type, instead of leaving the log empty; the decline reason and the Insufficient screen
+  say the site could not be reached rather than that its published documents did not answer
+  (fix/ESG-58-unreachable-site-source-log)
+- Seeded demo data on the retrieval screen is labelled as demo data on every row and in the
+  heading, never as retrieved, and shows no invented timings (fix/ESG-59-label-demo-sources)
+- Words a PDF splits across a line ("the cha ir") are rejoined when the same document contains
+  the whole word, so excerpts quote them correctly; real word pairs are left alone
+  (fix/ESG-60-rejoin-split-words)
+- Keyword runs now pause at every stage change, so polling sees extraction and scoring instead
+  of jumping from harvest to complete; the progress response lists every stage the run has
+  entered as stagesSeen (fix/ESG-61-yield-on-stage-change)
+- The disclosure grid on the search screen labels its peer field as illustrative instead of
+  showing a peer count when no peer cohort exists (fix/ESG-52-illustrative-peer-label)
+- Two undated editions of the same report (for example two annual reports with no year in the
+  title or link) are told apart by the PDFs' metadata dates; the older one stays in the source
+  log but is not read (fix/ESG-56-undated-edition-pdf-date)
 
 ## [1.2.0] - 2026-10-26
 

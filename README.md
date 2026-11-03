@@ -123,7 +123,7 @@ with no API key.
 | Post-deploy | `scripts/smoke_test.sh` | The live site answers, sign-in is enforced, matrices are the expected versions |
 
 ```
-cd backend && for t in test_*.py; do python "$t" || exit 1; done   # 346 assertions, 13 files
+cd backend && for t in test_*.py; do python "$t" || exit 1; done   # 399 assertions, 15 files
 cd e2e && npm install && npx playwright install chromium && npm test   # with ./demo.sh running
 ```
 

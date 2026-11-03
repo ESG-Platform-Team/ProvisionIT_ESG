@@ -46,7 +46,7 @@ anyone who runs, changes or deploys the platform after the semester.
   removed at handover.
 - **Host it yourselves:** Cloudflare in about 20 minutes ([DEPLOY.md](DEPLOY.md)),
   or AWS in about half a day ([docs/deploy-aws.md](docs/deploy-aws.md)).
-- **Change it safely:** every pull request runs 346+ automated checks, browser
+- **Change it safely:** every pull request runs 399 automated checks, browser
   tests and a secret scan ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## 2. Project overview
