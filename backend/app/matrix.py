@@ -13,6 +13,9 @@ MATRIX_VERSION = "G-4thEd v1.0"
 FRAMEWORK_EDITION = "ASX CGC 4th edition"
 FRAMEWORK_NAME = "ASX Corporate Governance Council Principles and Recommendations"
 UNIT_NAME = "Principle"
+# Whether criteria and bands are still provisional. Results from a draft matrix
+# are labelled as such on screen and in the report.
+DRAFT = False
 
 # Uniform 0..4 maturity across every criterion. If cy0701's matrix introduces
 # per-criterion scales, add a "scale" key here and normalise in scoring.py.

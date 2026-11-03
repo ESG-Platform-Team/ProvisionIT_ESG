@@ -7,8 +7,8 @@ and public, which is the same reasoning that anchored governance to the ASX CGC
 Principles. The resource and nature theme draws on the GRI 300 series topics.
 
 Status: DRAFT for Chen Yu's review. Criteria wording, keywords and grouping are a
-first pass written to exercise the pipeline, not a finished matrix. The version
-string says so, and every result carries it.
+first pass written to exercise the pipeline, not a finished matrix. DRAFT below
+says so, the version string repeats it, and every result carries both.
 
 Same shape as matrix.py on purpose. The scoring engine does not know which
 pillar it is scoring, which is the payoff of modelling the framework as data.
@@ -20,6 +20,8 @@ MATRIX_VERSION = "E-draft v0.1"
 FRAMEWORK_EDITION = "AASB S2 climate, GRI 300 series"
 FRAMEWORK_NAME = "AASB S2 Climate-related Disclosures and GRI environmental topics"
 UNIT_NAME = "Theme"
+# Provisional until reviewed. Set to False when the matrix is signed off.
+DRAFT = True
 
 PRINCIPLES = [
     {
