@@ -16,6 +16,7 @@ diagram as the deployment target.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import hashlib
 import re
@@ -65,6 +66,10 @@ class RunState:
         self.pillars = pillar_keys or ["GOVERNANCE"]
         self.status = "QUEUED"
         self.stage = "QUEUED"
+        # Every stage the run has entered, in order. Keyword runs pass through
+        # extraction and scoring in milliseconds, faster than any poll, so this
+        # is how a client can still show that they happened.
+        self.stages_seen: list[str] = ["QUEUED"]
         self.progress = 0.0
         self.source_log: list[dict] = []
         self.error: str | None = None
@@ -75,6 +80,19 @@ class RunState:
     def log(self, line: str) -> None:
         self.log_lines.append(line)
         print(f"  {line}", flush=True)
+
+    def enter(self, stage: str) -> None:
+        self.stage = stage
+        if self.stages_seen[-1] != stage:
+            self.stages_seen.append(stage)
+
+
+async def _enter(state: RunState, stage: str) -> None:
+    """Change stage, then yield to the event loop. Without the yield a keyword
+    run goes from extraction to scoring with nothing awaited in between, so a
+    poller in the same process sees HARVEST and then COMPLETE."""
+    state.enter(stage)
+    await asyncio.sleep(0)
 
 
 async def run_assessment(
@@ -98,7 +116,7 @@ async def run_assessment(
 
     async with harvest.new_client() as client:
         # --- Stage 1, discovery -------------------------------------------
-        state.stage = "HARVEST"
+        await _enter(state, "HARVEST")
         state.log(f"Discovering disclosure documents on {company['website']}")
         hv = harvest.Harvester(max_docs=max_docs)
 
@@ -162,7 +180,7 @@ async def run_assessment(
     state.log(f"{len(readable)} of {len(documents)} sources yielded text")
 
     # --- Stage 3, extraction, one pass per pillar -------------------------
-    state.stage = "EXTRACT"
+    await _enter(state, "EXTRACT")
     client_llm = llm.GeminiClient(api_key=api_key) if use_llm else None
     if client_llm and not client_llm.configured:
         state.log("GEMINI_API_KEY not set, falling back to keyword extraction")
@@ -175,6 +193,7 @@ async def run_assessment(
 
     async with harvest.new_client() as client:
         for key in keys:
+            await _enter(state, "EXTRACT")
             spec = pillars.get(key)
             findings_by_code: dict[str, dict] = {}
             finding_source: dict[str, dict] = {}
@@ -218,7 +237,7 @@ async def run_assessment(
                 state.progress = 0.4 + 0.55 * units_done / max(1, units_total)
 
             # --- Stage 4, deterministic scoring ---------------------------
-            state.stage = "SCORE"
+            await _enter(state, "SCORE")
             scored = scoring.score_run(findings_by_code, documents, retrieval_failed,
                                        spec["principles"])
             engine = "LLM" if client_llm else "KEYWORD"
@@ -239,7 +258,7 @@ async def run_assessment(
     if client_llm:
         state.log(f"Gemini calls: {client_llm.calls_made}, cache hits: {client_llm.cache_hits}")
 
-    state.stage = "AGGREGATE"
+    await _enter(state, "AGGREGATE")
     state.progress = 0.98
     return _assemble(company, state, pillar_results, documents,
                      engine="LLM" if client_llm else "KEYWORD",
@@ -359,7 +378,7 @@ def _request_note(req: dict, row_status: str) -> str:
 def _assemble(company, state, pillar_results, documents, engine, model,
               disclosure_requests) -> dict:
     state.status = "COMPLETE"
-    state.stage = "COMPLETE"
+    state.enter("COMPLETE")
     state.progress = 1.0
     state.completed_at = time.time()
     generated = _iso(state.completed_at)

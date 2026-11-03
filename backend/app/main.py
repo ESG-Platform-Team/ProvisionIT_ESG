@@ -285,6 +285,7 @@ async def get_assessment(run_id: str):
         "runId": run_id,
         "status": state.status,
         "stage": state.stage,
+        "stagesSeen": state.stages_seen,
         "pillars": state.pillars,
         "progress": round(state.progress, 3),
         "sourceLog": state.source_log,
