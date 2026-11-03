@@ -267,6 +267,7 @@ change without breaking the other.
 | `analytics.js`, `analytics.config.js` | PostHog (off until a key is set) |
 | `vendor/` | React, Babel, posthog-js and fonts, so the site works offline |
 
+Code and deployment diagrams: [docs/architecture.md](docs/architecture.md).
 Architecture diagrams, use case and sequence diagrams are on Confluence:
 [Architecture Diagrams](https://provisionitesg.atlassian.net/wiki/spaces/PEP/pages/3768381),
 [As-built architecture](https://provisionitesg.atlassian.net/wiki/spaces/PEP/pages/16351289),

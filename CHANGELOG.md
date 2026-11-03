@@ -8,6 +8,8 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.3.0] - 2026-11-04
 
 ### Added
+- Code and deployment architecture diagrams with a short guide (docs/architecture.md)
+  (docs/architecture)
 - Handover pack for Provision IT: HANDOVER.md (setup, accounts and keys, Cloudflare and AWS
   deployment, architecture, algorithms, database, design system, user manual, outstanding items,
   maintenance and contacts), AWS deployment guide (docs/deploy-aws.md) and a manual AWS deploy

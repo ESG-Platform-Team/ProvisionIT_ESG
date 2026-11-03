@@ -47,7 +47,7 @@ frontend/    Six screen interface, static, no build step
 cloudflare/  Worker that serves the site and runs the API as a container
 e2e/         Browser tests for the analyst journey
 scripts/     Secret scan and post-deploy smoke test
-docs/        Database schema, analytics setup, AWS deployment guide
+docs/        Architecture diagrams, database schema, analytics, AWS deployment guide
 ```
 
 ## Demo
