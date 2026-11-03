@@ -259,7 +259,7 @@
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:36px;align-items:center">
           <button onClick="{{ openResult }}" style="background:#F4BF3F;border:none;color:#0E0F14;padding:15px 30px;cursor:pointer;font-family:Archivo,sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;transition:transform .18s,background .18s" style-hover="background:#E2A61E;transform:translateY(-2px)">{{ run.cta }}</button>
           <button onClick="{{ goSearch }}" style="background:transparent;border:1px solid #2E323F;color:#9AA0AE;padding:15px 26px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;transition:all .2s" style-hover="border-color:#565C6C;color:#E7E8EC">New search</button>
-          <span style="font-size:12.5px;color:#565C6C;line-height:1.5;max-width:34ch">Sources are captured and stored on the assessment date so the result can be reproduced.</span>
+          <span style="font-size:12.5px;color:#565C6C;line-height:1.5;max-width:34ch">{{ run.foot }}</span>
         </div>
       </sc-if>
     </div>
@@ -1769,10 +1769,16 @@ class Component extends DCLogic {
     };
     const log = st.log.map(s => {
       const m = statusMap[s.status] || statusMap.notfound;
-      return { name: s.name, loc: s.url || s.loc, status: m.status, dot: m.dot, color: m.color,
-        timing: (s.ms || 0) + " ms · " + (s.bytes ? (s.bytes / 1000).toFixed(1) + " kB" : s.mode),
+      // Seeded demo rows were never fetched, so they say demo data, not retrieved.
+      return { name: s.name, loc: s.url || s.loc,
+        status: s.demo ? ({ scan: "Demo data · scan", notfound: "Demo data · not found",
+          blocked: "Demo data · blocked", unreadable: "Demo data · unreadable" }[s.status] || "Demo data")
+          : m.status, dot: m.dot, color: m.color,
+        timing: s.demo ? "seeded demo · not fetched"
+          : (s.ms || 0) + " ms · " + (s.bytes ? (s.bytes / 1000).toFixed(1) + " kB" : s.mode),
         anim: "pi-fade .4s ease" };
     });
+    const demoRun = !st.payload && (st.log.some(s => s.demo) || !st.live);
     // Live runs do not know how many documents exist until discovery finishes,
     // so the total is whatever has been logged so far.
     const total = Math.max(1, st.current && st.current.sources.length ? st.current.sources.length : st.log.length);
@@ -1886,12 +1892,16 @@ class Component extends DCLogic {
       run: {
         company: st.current ? st.current.name : "—",
         meta: (st.current ? [st.current.code, st.current.tier].filter(Boolean).join(" · ") : "") + " · " + today(),
-        stage: st.running ? "Step 2 of 3 · live source log" : (st.done ? "Retrieval complete" : "Idle"),
-        title: st.done && !st.running ? "Sources retrieved" : "Retrieving sources",
+        stage: demoRun ? "Seeded demo data · nothing is fetched"
+          : st.running ? "Step 2 of 3 · live source log" : (st.done ? "Retrieval complete" : "Idle"),
+        title: demoRun ? "Demo sources" : st.done && !st.running ? "Sources retrieved" : "Retrieving sources",
         anim: st.running ? "pi-ping 1.4s ease-out infinite" : "none",
         pct: Math.round((st.log.length / total) * 100),
-        count: retrievedN + " of " + total + " retrieved",
-        mode: st.live ? (st.running && st.runNote ? st.runNote : "live fetch · company website") : "stored capture · replayed with timings",
+        count: demoRun ? st.log.length + " of " + total + " demo rows" : retrievedN + " of " + total + " retrieved",
+        mode: demoRun ? "seeded demo data · no site contacted"
+          : st.live ? (st.running && st.runNote ? st.runNote : "live fetch · company website") : "stored capture · replayed with timings",
+        foot: demoRun ? "Seeded demo data. No site was contacted and nothing was retrieved."
+          : "Sources are captured and stored on the assessment date so the result can be reproduced.",
         done: st.done,
         cta: (st.payload ? a.allDeclined : (st.result && st.result.insufficient)) ? "See why we declined" : "Open assessment"
       },
