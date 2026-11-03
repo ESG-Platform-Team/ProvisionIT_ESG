@@ -5,6 +5,13 @@ Unreleased. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Handover pack for Provision IT: HANDOVER.md (setup, accounts and keys, Cloudflare and AWS
+  deployment, architecture, algorithms, database, design system, user manual, outstanding items,
+  maintenance and contacts), AWS deployment guide (docs/deploy-aws.md) and a manual AWS deploy
+  workflow using OpenID Connect, LICENSE assigning ownership to Provision IT Pty Ltd, and
+  THIRD_PARTY_LICENSES.md (docs/handover)
+
 ## [1.2.0] - 2026-10-26
 
 ### Added

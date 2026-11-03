@@ -1,0 +1,43 @@
+ESG Assessment Platform
+Copyright (c) 2026 Provision IT Pty Ltd. All rights reserved.
+
+OWNERSHIP
+
+This software, its documentation and its design were developed for Provision
+IT Pty Ltd ("Provision IT") by the COMP30022 IT Project team at the University
+of Melbourne (Agam Johal, Chen Yu Lin, Pulitha Wimalendra, Jun Hyun Cho and
+Toan Le, "the Authors") in Semester 2, 2026.
+
+As agreed with Provision IT, the Authors assign to Provision IT all of their
+right, title and interest in this software, including copyright in the source
+code, documentation, assessment matrices and interface design, with effect
+from the date of handover (the transfer of this repository to Provision IT).
+
+LICENCE
+
+Provision IT may use, copy, modify, deploy, sublicense, sell and distribute
+this software, in whole or in part, for any purpose, without further
+permission from or payment to the Authors.
+
+No one else may use, copy, modify or distribute this software without written
+permission from Provision IT.
+
+The Authors keep the right to describe their contribution to this project, and
+to show non-confidential screenshots and descriptions of it, in their academic
+work and professional portfolios.
+
+THIRD-PARTY SOFTWARE
+
+This software includes and depends on open-source components that remain under
+their own licences. They are listed, with their licences, in
+THIRD_PARTY_LICENSES.md. Nothing in this licence changes the terms of those
+components.
+
+NO WARRANTY
+
+The software is provided "as is", without warranty of any kind, express or
+implied, including the warranties of merchantability, fitness for a particular
+purpose and non-infringement. Assessments produced by the software are formed
+by software and are not professional, financial or investment advice. In no
+event shall the Authors be liable for any claim, damages or other liability
+arising from the software or its use.

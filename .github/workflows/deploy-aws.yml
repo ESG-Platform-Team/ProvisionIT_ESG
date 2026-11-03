@@ -1,0 +1,89 @@
+name: Deploy to AWS
+
+# Deploys the platform to Provision IT's AWS account (docs/deploy-aws.md):
+# builds the API image, pushes it to ECR, rolls the ECS service, uploads the
+# website to S3, clears the CloudFront cache and runs the smoke test.
+#
+# Started by hand from the Actions tab until the AWS account is connected.
+# Uses GitHub's OpenID Connect to assume an IAM role: no AWS keys are stored
+# in GitHub. One-time setup (docs/deploy-aws.md, "Continuous deployment"):
+#   Settings > Secrets and variables > Actions > Variables:
+#     AWS_ROLE_ARN, AWS_REGION, ECR_REPOSITORY, ECS_CLUSTER, ECS_SERVICE,
+#     WEB_BUCKET, CLOUDFRONT_DISTRIBUTION_ID, AWS_SITE_URL
+#   Settings > Environments > "production-aws" > Required reviewers
+# To deploy on every merge to main, copy the workflow_run trigger from
+# deploy.yml.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: production-aws
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production-aws
+      url: ${{ vars.AWS_SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the AWS settings are in place
+        env:
+          ROLE: ${{ vars.AWS_ROLE_ARN }}
+          SITE: ${{ vars.AWS_SITE_URL }}
+        run: |
+          if [ -z "$ROLE" ] || [ -z "$SITE" ]; then
+            echo "::error::AWS is not connected yet. Follow docs/deploy-aws.md, Continuous deployment."
+            exit 1
+          fi
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push the API image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPO: ${{ vars.ECR_REPOSITORY }}
+        run: |
+          docker build --platform linux/amd64 \
+            -t "$REGISTRY/$REPO:${GITHUB_SHA::7}" -t "$REGISTRY/$REPO:latest" backend
+          docker push "$REGISTRY/$REPO:${GITHUB_SHA::7}"
+          docker push "$REGISTRY/$REPO:latest"
+
+      - name: Roll the ECS service onto the new image
+        run: |
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE }}" --force-new-deployment > /dev/null
+          aws ecs wait services-stable --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE }}"
+
+      - name: Upload the website
+        run: |
+          aws s3 sync frontend "s3://${{ vars.WEB_BUCKET }}" --delete \
+            --exclude "*.md" --exclude ".assetsignore"
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*" > /dev/null
+
+      - name: Smoke test
+        run: bash scripts/smoke_test.sh "${{ vars.AWS_SITE_URL }}"
+
+      - name: Record the release
+        run: |
+          {
+            echo "### Deployed to AWS"
+            echo "- Commit: \`${GITHUB_SHA::7}\`"
+            echo "- Site: ${{ vars.AWS_SITE_URL }}"
+            echo "- Roll back: ECS service > Update > previous task definition revision"
+          } >> "$GITHUB_STEP_SUMMARY"
