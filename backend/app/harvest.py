@@ -15,7 +15,9 @@ constraints rather than implementation preferences:
 from __future__ import annotations
 
 import asyncio
+import datetime
 import hashlib
+import io
 import os
 import re
 import time
@@ -302,7 +304,8 @@ def latest_only(docs: list[dict]) -> list[dict]:
     governance statement, climate report and modern slavery statement; only the
     current one describes the company as it is, and fetching the archive costs
     minutes and model calls for nothing. Undated documents (policies, charters)
-    are all kept."""
+    are all kept here; two undated editions of the same report are told apart
+    after download by superseded_editions()."""
     newest: dict[str, int] = {}
     for d in docs:
         y = _year(d)
@@ -310,6 +313,62 @@ def latest_only(docs: list[dict]) -> list[dict]:
             newest[d["source_type"]] = max(y, newest.get(d["source_type"], y))
     return [d for d in docs
             if _year(d) is None or _year(d) == newest.get(d["source_type"])]
+
+
+# Document types that are published as a new edition each period, so two of
+# them on one site are usually this year's and an older one. Policies and
+# charters are not on the list: two of those are two different documents.
+EDITION_TYPES = {
+    "governance_statement", "annual_report", "remuneration_report",
+    "sustainability_report", "climate_statement", "modern_slavery_statement",
+    "wgea_report", "notice_of_meeting", "agm_results",
+}
+
+
+def pdf_date(content: bytes) -> datetime.datetime | None:
+    """The date a PDF says it was created (or, failing that, last modified),
+    from its own metadata, in UTC. None for anything that is not a PDF or has
+    no readable date."""
+    if not content.startswith(b"%PDF"):
+        return None
+    try:
+        from pypdf import PdfReader
+
+        meta = PdfReader(io.BytesIO(content)).metadata
+        when = meta and (meta.creation_date or meta.modification_date)
+    except Exception:  # noqa: BLE001 - malformed metadata is common and harmless
+        return None
+    if not when:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    return when.astimezone(datetime.timezone.utc)
+
+
+def superseded_editions(items: list[tuple[dict, bytes]]) -> dict[int, int]:
+    """Older undated editions, by PDF metadata date.
+
+    items are (candidate, content) pairs for documents that were retrieved.
+    latest_only() cannot choose between two editions of a report when neither
+    title nor URL carries a year, so both are fetched. Here the PDFs' own
+    dates pick the newest. Returns {index of older edition: index of the
+    newest}. A document with no metadata date is never dropped, and nothing
+    is dropped when the dates do not differ, because then we cannot tell.
+    """
+    groups: dict[str, list[tuple[datetime.datetime | None, int]]] = {}
+    for i, (cand, content) in enumerate(items):
+        if cand["source_type"] in EDITION_TYPES and _year(cand) is None:
+            groups.setdefault(cand["source_type"], []).append((pdf_date(content), i))
+    out: dict[int, int] = {}
+    for group in groups.values():
+        dated = [(when, i) for when, i in group if when is not None]
+        if len(group) < 2 or not dated:
+            continue
+        newest_when, newest = max(dated)
+        for when, i in dated:
+            if when < newest_when:
+                out[i] = newest
+    return out
 
 
 def _classify(haystack: str) -> str | None:

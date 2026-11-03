@@ -149,6 +149,7 @@ async def run_assessment(
         titles_seen: dict[str, int] = {}
 
         total = len(candidates) + len(extra_documents or [])
+        fetched: list[tuple[dict, dict, bytes]] = []
         for i, cand in enumerate(candidates):
             task, doc = await hv.fetch(client, cand["url"], cand["source_type"], cand["title"])
             entry = _entry(cand["title"], cand["url"], cand["source_type"],
@@ -157,10 +158,13 @@ async def run_assessment(
                           "robotsAllowed": task.robots_allowed, "note": task.note})
             if doc is not None:
                 _read(doc, entry, cand["source_type"], texts, titles_seen)
+                if entry["outcome"] == "RETRIEVED":
+                    fetched.append((cand, entry, doc.content))
             documents.append(entry)
             state.source_log = documents
             state.progress = 0.1 + 0.3 * ((i + 1) / max(1, total))
             _log_doc(state, entry)
+        _set_aside_older_editions(fetched, texts, state)
 
         for extra in extra_documents or []:
             doc = _local_document(extra)
@@ -306,6 +310,23 @@ def _read(doc, entry, source_type, texts, titles_seen) -> None:
     entry["sourceGrade"] = scoring.grade_for(source_type, method)
     _persist(doc)
     texts.append((title, pages, source_type))
+
+
+def _set_aside_older_editions(fetched, texts, state) -> None:
+    """Two undated editions of one report, for example two annual reports with
+    no year in the title or URL, would both be read and the older one could
+    supply the evidence. The PDFs' metadata dates choose the newest. The older
+    edition stays in the source log, since it was fetched, but its text is not
+    read and its grade does not count toward confidence."""
+    older = harvest.superseded_editions([(cand, content) for cand, _, content in fetched])
+    for i, newest in older.items():
+        entry, keep = fetched[i][1], fetched[newest][1]
+        texts[:] = [t for t in texts if t[0] != entry["title"]]
+        entry["sourceGrade"] = None
+        entry["supersededBy"] = keep["sourceDocumentId"]
+        entry["note"] = (f"Older edition by PDF date, not assessed; "
+                         f"{keep['title']} was read instead")
+        state.log(f"Set aside {entry['title'][:40]}, an older edition of {keep['title'][:40]}")
 
 
 def _log_doc(state, entry) -> None:
