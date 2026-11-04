@@ -33,7 +33,9 @@ def get(pillar: str) -> dict:
         "frameworkName": mod.FRAMEWORK_NAME,
         "unitName": mod.UNIT_NAME,
         "principles": mod.PRINCIPLES,
-        "draft": "draft" in mod.MATRIX_VERSION.lower(),
+        # Read from the module, not guessed from the version name, so renaming
+        # a version can never quietly change whether a result says draft.
+        "draft": bool(mod.DRAFT),
     }
 
 

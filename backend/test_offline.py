@@ -139,5 +139,31 @@ check("a governance statement grades B", scoring.grade_for("governance_statement
 check("website text grades C", scoring.grade_for("webpage", "html") == "C")
 check("OCR recovery costs one grade", scoring.grade_for("annual_report", "ocr") == "B")
 
+print("\nWORDS SPLIT ACROSS A PDF LINE (ESG-60, TC18)")
+gov_pdf = Path(__file__).parent / "fixture-site/docs/corporate-governance-statement-2026.pdf"
+_, gov_pages, gov_method = textract._pdf(gov_pdf.read_bytes())
+check("the fixture statement still reads as a native text layer", gov_method == "native")
+check("a word cut at the line end is put back together",
+      "the chair and management" in gov_pages[1], gov_pages[1][:160])
+check("no excerpt source keeps the split", "cha ir" not in " ".join(" ".join(gov_pages).split()))
+gov_passages = [("Gov statement", n, t) for n, t in
+                textract.windows_for(gov_pages, ["roles and responsibilities"])]
+g11 = next(f for f in llm.keyword_findings(PRINCIPLES[0], gov_passages)
+           if f["criterionCode"] == "G1.1")
+check("the quoted excerpt reads the chair, not the cha ir",
+      "the chair and management" in g11["excerpt"], g11["excerpt"])
+check("a line starting with a full stop rejoins the line before it",
+      "announcements promptly." in gov_pages[5], gov_pages[5][-60:])
+
+kept = textract.rejoin_split_words([
+    "The board met forever in the past, for whatever reason, if ever asked.\n"
+    "It will meet for\never more after that.\n"
+    "It operates under a\ndisclosed charter and the chair\nIs independent."])[0]
+check("two real words are not merged even when the joined form exists", "for\never" in kept)
+check("words are not merged when the joined form is not in the document", "a\ndisclosed" in kept)
+check("a line starting in capitals is never joined", "chair\nIs" in kept)
+split = textract.rejoin_split_words(["The chair is independent.\nThe board and the cha\nir agree."])[0]
+check("a fragment pair is joined when the document has the whole word", "the chair agree" in split, split)
+
 print(f"\n{PASS} passed, {FAIL} failed\n")
 raise SystemExit(1 if FAIL else 0)

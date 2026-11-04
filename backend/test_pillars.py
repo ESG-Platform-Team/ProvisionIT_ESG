@@ -24,6 +24,41 @@ check("environmental and social are marked draft",
       pillars.get("ENVIRONMENTAL")["draft"] and pillars.get("SOCIAL")["draft"])
 check("governance is not marked draft", not pillars.get("GOVERNANCE")["draft"])
 
+section("DRAFT STATUS IS AN EXPLICIT FLAG (ESG-43)")
+from app import matrix, matrix_environmental, matrix_social  # noqa: E402
+
+modules = {"GOVERNANCE": matrix, "ENVIRONMENTAL": matrix_environmental, "SOCIAL": matrix_social}
+check("every matrix module declares DRAFT as a boolean",
+      all(isinstance(getattr(m, "DRAFT", None), bool) for m in modules.values()))
+check("governance DRAFT is False, environmental and social are True",
+      (matrix.DRAFT, matrix_environmental.DRAFT, matrix_social.DRAFT) == (False, True, True))
+check("the registry's draft field follows each module's flag",
+      all(pillars.get(k)["draft"] is m.DRAFT for k, m in modules.items()))
+check("the matrix version strings are unchanged",
+      [pillars.get(k)["matrixVersion"] for k in pillars.ORDER]
+      == ["G-4thEd v1.0", "E-draft v0.1", "S-draft v0.1"])
+
+saved = (matrix.MATRIX_VERSION, matrix_environmental.MATRIX_VERSION)
+try:
+    matrix.MATRIX_VERSION = "G-draft v9.9"
+    matrix_environmental.MATRIX_VERSION = "E v1.0"
+    check("a version name containing draft does not make a final matrix draft",
+          pillars.get("GOVERNANCE")["draft"] is False)
+    check("a version name without draft does not make a draft matrix final",
+          pillars.get("ENVIRONMENTAL")["draft"] is True)
+    check("the version string is still passed through as metadata",
+          pillars.get("ENVIRONMENTAL")["matrixVersion"] == "E v1.0")
+finally:
+    matrix.MATRIX_VERSION, matrix_environmental.MATRIX_VERSION = saved
+
+from testfixtures import fake_run  # noqa: E402
+
+run = fake_run()
+check("a run payload still carries draft per pillar",
+      [p["draft"] for p in run["pillars"]] == [False, True, True])
+check("a run payload still carries the matrix version per pillar",
+      [p["matrixVersion"] for p in run["pillars"]] == ["G-4thEd v1.0", "E-draft v0.1", "S-draft v0.1"])
+
 
 def full_findings(principles):
     return {c["criterionCode"]: {"criterionCode": c["criterionCode"], "found": True,

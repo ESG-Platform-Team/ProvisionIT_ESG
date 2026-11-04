@@ -16,6 +16,8 @@ MATRIX_VERSION = "S-draft v0.1"
 FRAMEWORK_EDITION = "Modern Slavery Act, WGEA, GRI 400 series"
 FRAMEWORK_NAME = "Australian social disclosure regimes and GRI social topics"
 UNIT_NAME = "Theme"
+# Provisional until reviewed. Set to False when the matrix is signed off.
+DRAFT = True
 
 PRINCIPLES = [
     {

@@ -47,7 +47,7 @@ frontend/    Six screen interface, static, no build step
 cloudflare/  Worker that serves the site and runs the API as a container
 e2e/         Browser tests for the analyst journey
 scripts/     Secret scan and post-deploy smoke test
-docs/        Database schema, analytics setup, AWS deployment guide
+docs/        Architecture diagrams, database schema, analytics, AWS deployment guide
 ```
 
 ## Demo
@@ -123,7 +123,7 @@ with no API key.
 | Post-deploy | `scripts/smoke_test.sh` | The live site answers, sign-in is enforced, matrices are the expected versions |
 
 ```
-cd backend && for t in test_*.py; do python "$t" || exit 1; done   # 346 assertions, 13 files
+cd backend && for t in test_*.py; do python "$t" || exit 1; done   # 399 assertions, 15 files
 cd e2e && npm install && npx playwright install chromium && npm test   # with ./demo.sh running
 ```
 
@@ -157,7 +157,9 @@ naming, commit messages, pull request expectations and review.
 
 ## Licence
 
-Owned by Provision IT Pty Ltd. See [LICENSE](LICENSE) and
+Built for Provision IT Pty Ltd. Intellectual property passes from the team to
+the University of Melbourne under the COMP30022 Student Deed, and from the
+University to Provision IT by agreement. See [LICENSE](LICENSE) and
 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Team

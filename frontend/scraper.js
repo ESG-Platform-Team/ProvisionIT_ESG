@@ -1,6 +1,8 @@
 // Governance scraper: attempts a real cross-origin text fetch, falls back to the
 // stored capture when the browser (or the site) refuses. Keyword matching over the
-// recovered text is what marks criteria as evidenced.
+// recovered text is what marks criteria as evidenced. With live off, rows are
+// seeded demo data: nothing is fetched, so they are flagged demo and never
+// reported as retrieved.
 
 const READER = "https://r.jina.ai/";
 
@@ -30,7 +32,7 @@ export async function fetchSource(src, { live }) {
   const t0 = performance.now();
   if (!live || !src.url) {
     await wait(src.delay ?? 260);
-    return { ...src, ms: Math.round(src.delay ?? 260), mode: "stored capture" };
+    return { ...src, ms: Math.round(src.delay ?? 260), mode: "seeded demo, not fetched", demo: true };
   }
   try {
     const res = await fetch(READER + src.url, { headers: { Accept: "text/plain" } });

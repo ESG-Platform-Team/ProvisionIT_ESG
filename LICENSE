@@ -1,30 +1,37 @@
 ESG Assessment Platform
-Copyright (c) 2026 Provision IT Pty Ltd. All rights reserved.
+Copyright (c) 2026 The University of Melbourne, for Provision IT Pty Ltd.
+All rights reserved.
 
-OWNERSHIP
+WHO OWNS THIS SOFTWARE
 
 This software, its documentation and its design were developed for Provision
 IT Pty Ltd ("Provision IT") by the COMP30022 IT Project team at the University
 of Melbourne (Agam Johal, Chen Yu Lin, Pulitha Wimalendra, Jun Hyun Cho and
 Toan Le, "the Authors") in Semester 2, 2026.
 
-As agreed with Provision IT, the Authors assign to Provision IT all of their
-right, title and interest in this software, including copyright in the source
-code, documentation, assessment matrices and interface design, with effect
-from the date of handover (the transfer of this repository to Provision IT).
+Intellectual property in this software is governed by the COMP30022 Industry
+Software Project Letter Agreement (the Student Deed). Under it, each Author
+assigned their intellectual property in the project to The University of
+Melbourne ("the University"). Because Provision IT is the external client, the
+University signs an agreement with Provision IT that gives Provision IT the
+intellectual property, so that Provision IT can maintain the software going
+forward. Where that agreement and this file differ, the agreement prevails.
 
 LICENCE
 
-Provision IT may use, copy, modify, deploy, sublicense, sell and distribute
-this software, in whole or in part, for any purpose, without further
-permission from or payment to the Authors.
+Subject to the University's agreement with Provision IT, Provision IT may use,
+copy, modify, deploy, sublicense, sell and distribute this software, in whole
+or in part, for any purpose.
 
 No one else may use, copy, modify or distribute this software without written
-permission from Provision IT.
+permission from Provision IT or the University.
 
-The Authors keep the right to describe their contribution to this project, and
-to show non-confidential screenshots and descriptions of it, in their academic
-work and professional portfolios.
+The Authors may describe their contribution to this project, and show
+non-confidential screenshots and descriptions of it, in their academic work
+and professional portfolios, as the Student Deed allows.
+
+Questions about these terms go to the COMP30022 Subject Coordinator,
+School of Computing and Information Systems, The University of Melbourne.
 
 THIRD-PARTY SOFTWARE
 
@@ -39,5 +46,5 @@ The software is provided "as is", without warranty of any kind, express or
 implied, including the warranties of merchantability, fitness for a particular
 purpose and non-infringement. Assessments produced by the software are formed
 by software and are not professional, financial or investment advice. In no
-event shall the Authors be liable for any claim, damages or other liability
-arising from the software or its use.
+event shall the Authors or the University be liable for any claim, damages or
+other liability arising from the software or its use.

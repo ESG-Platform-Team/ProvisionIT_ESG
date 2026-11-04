@@ -16,6 +16,7 @@ diagram as the deployment target.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import hashlib
 import re
@@ -65,6 +66,10 @@ class RunState:
         self.pillars = pillar_keys or ["GOVERNANCE"]
         self.status = "QUEUED"
         self.stage = "QUEUED"
+        # Every stage the run has entered, in order. Keyword runs pass through
+        # extraction and scoring in milliseconds, faster than any poll, so this
+        # is how a client can still show that they happened.
+        self.stages_seen: list[str] = ["QUEUED"]
         self.progress = 0.0
         self.source_log: list[dict] = []
         self.error: str | None = None
@@ -75,6 +80,19 @@ class RunState:
     def log(self, line: str) -> None:
         self.log_lines.append(line)
         print(f"  {line}", flush=True)
+
+    def enter(self, stage: str) -> None:
+        self.stage = stage
+        if self.stages_seen[-1] != stage:
+            self.stages_seen.append(stage)
+
+
+async def _enter(state: RunState, stage: str) -> None:
+    """Change stage, then yield to the event loop. Without the yield a keyword
+    run goes from extraction to scoring with nothing awaited in between, so a
+    poller in the same process sees HARVEST and then COMPLETE."""
+    state.enter(stage)
+    await asyncio.sleep(0)
 
 
 async def run_assessment(
@@ -98,11 +116,25 @@ async def run_assessment(
 
     async with harvest.new_client() as client:
         # --- Stage 1, discovery -------------------------------------------
-        state.stage = "HARVEST"
+        await _enter(state, "HARVEST")
         state.log(f"Discovering disclosure documents on {company['website']}")
         hv = harvest.Harvester(max_docs=max_docs)
 
         candidates = await hv.discover(client, company["website"])
+        documents: list[dict] = []
+        home = hv.home_task
+        if home is not None and home.status != "RETRIEVED":
+            # The home page is where discovery starts. If it failed, nothing
+            # was found because nothing could be read, and the source log has
+            # to say so rather than look empty.
+            entry = _entry("Company website home page", home.target_url, "webpage",
+                           _short_location(home.target_url), home.status)
+            entry.update({"httpStatus": home.http_status, "elapsedMs": home.elapsed_ms,
+                          "robotsAllowed": home.robots_allowed, "note": home.note,
+                          "homePage": True})
+            documents.append(entry)
+            state.source_log = documents
+            _log_doc(state, entry)
         for url in company.get("extraUrls") or []:
             candidates.append({
                 "url": url, "source_type": _guess_type(url),
@@ -113,11 +145,11 @@ async def run_assessment(
         state.progress = 0.1
 
         # --- Stage 2, fetch and extract -----------------------------------
-        documents: list[dict] = []
         texts: list[tuple[str, list[str], str]] = []
         titles_seen: dict[str, int] = {}
 
         total = len(candidates) + len(extra_documents or [])
+        fetched: list[tuple[dict, dict, bytes]] = []
         for i, cand in enumerate(candidates):
             task, doc = await hv.fetch(client, cand["url"], cand["source_type"], cand["title"])
             entry = _entry(cand["title"], cand["url"], cand["source_type"],
@@ -126,10 +158,13 @@ async def run_assessment(
                           "robotsAllowed": task.robots_allowed, "note": task.note})
             if doc is not None:
                 _read(doc, entry, cand["source_type"], texts, titles_seen)
+                if entry["outcome"] == "RETRIEVED":
+                    fetched.append((cand, entry, doc.content))
             documents.append(entry)
             state.source_log = documents
             state.progress = 0.1 + 0.3 * ((i + 1) / max(1, total))
             _log_doc(state, entry)
+        _set_aside_older_editions(fetched, texts, state)
 
         for extra in extra_documents or []:
             doc = _local_document(extra)
@@ -149,7 +184,7 @@ async def run_assessment(
     state.log(f"{len(readable)} of {len(documents)} sources yielded text")
 
     # --- Stage 3, extraction, one pass per pillar -------------------------
-    state.stage = "EXTRACT"
+    await _enter(state, "EXTRACT")
     client_llm = llm.GeminiClient(api_key=api_key) if use_llm else None
     if client_llm and not client_llm.configured:
         state.log("GEMINI_API_KEY not set, falling back to keyword extraction")
@@ -162,6 +197,7 @@ async def run_assessment(
 
     async with harvest.new_client() as client:
         for key in keys:
+            await _enter(state, "EXTRACT")
             spec = pillars.get(key)
             findings_by_code: dict[str, dict] = {}
             finding_source: dict[str, dict] = {}
@@ -205,7 +241,7 @@ async def run_assessment(
                 state.progress = 0.4 + 0.55 * units_done / max(1, units_total)
 
             # --- Stage 4, deterministic scoring ---------------------------
-            state.stage = "SCORE"
+            await _enter(state, "SCORE")
             scored = scoring.score_run(findings_by_code, documents, retrieval_failed,
                                        spec["principles"])
             engine = "LLM" if client_llm else "KEYWORD"
@@ -226,7 +262,7 @@ async def run_assessment(
     if client_llm:
         state.log(f"Gemini calls: {client_llm.calls_made}, cache hits: {client_llm.cache_hits}")
 
-    state.stage = "AGGREGATE"
+    await _enter(state, "AGGREGATE")
     state.progress = 0.98
     return _assemble(company, state, pillar_results, documents,
                      engine="LLM" if client_llm else "KEYWORD",
@@ -274,6 +310,23 @@ def _read(doc, entry, source_type, texts, titles_seen) -> None:
     entry["sourceGrade"] = scoring.grade_for(source_type, method)
     _persist(doc)
     texts.append((title, pages, source_type))
+
+
+def _set_aside_older_editions(fetched, texts, state) -> None:
+    """Two undated editions of one report, for example two annual reports with
+    no year in the title or URL, would both be read and the older one could
+    supply the evidence. The PDFs' metadata dates choose the newest. The older
+    edition stays in the source log, since it was fetched, but its text is not
+    read and its grade does not count toward confidence."""
+    older = harvest.superseded_editions([(cand, content) for cand, _, content in fetched])
+    for i, newest in older.items():
+        entry, keep = fetched[i][1], fetched[newest][1]
+        texts[:] = [t for t in texts if t[0] != entry["title"]]
+        entry["sourceGrade"] = None
+        entry["supersededBy"] = keep["sourceDocumentId"]
+        entry["note"] = (f"Older edition by PDF date, not assessed; "
+                         f"{keep['title']} was read instead")
+        state.log(f"Set aside {entry['title'][:40]}, an older edition of {keep['title'][:40]}")
 
 
 def _log_doc(state, entry) -> None:
@@ -346,7 +399,7 @@ def _request_note(req: dict, row_status: str) -> str:
 def _assemble(company, state, pillar_results, documents, engine, model,
               disclosure_requests) -> dict:
     state.status = "COMPLETE"
-    state.stage = "COMPLETE"
+    state.enter("COMPLETE")
     state.progress = 1.0
     state.completed_at = time.time()
     generated = _iso(state.completed_at)

@@ -1,6 +1,6 @@
 # Third-party licences
 
-The platform is owned by Provision IT Pty Ltd (see [LICENSE](LICENSE)). It is
+The platform's own licence is in [LICENSE](LICENSE). It is
 built on the open-source components below, which keep their own licences. All
 of them allow commercial use. Versions are the ones tested at handover
 (November 2026).

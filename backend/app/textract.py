@@ -53,6 +53,7 @@ def _pdf(data: bytes) -> tuple[str, list[str], str]:
         except Exception:
             return "", [], "failed"
 
+    pages = rejoin_split_words(pages)
     full = "\n".join(pages)
     if len(full.strip()) >= MIN_CHARS_FOR_TEXT_LAYER:
         return full, pages, "native"
@@ -105,6 +106,53 @@ def _clean(text: str) -> str:
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+_WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
+_EDGE_TAIL = re.compile(r"([A-Za-z]+)$")
+_EDGE_HEAD = re.compile(r"^([a-z][A-Za-z'-]*)")
+
+
+def rejoin_split_words(pages: list[str]) -> list[str]:
+    """Repair words a PDF broke across a line, such as "cha" / "ir".
+
+    Some PDFs wrap at a fixed width rather than at spaces, so a word is cut at
+    the line end and every excerpt quoting it reads "the cha ir". Only joins
+    that the document itself supports are made, so legitimate words are never
+    merged: the joined form has to occur as a whole word somewhere in the
+    document, away from any line edge, and at least one of the two pieces must
+    not. The continuation must start in lower case. A line that starts with
+    punctuation is put back on the end of the line before it.
+    """
+    vocab: set[str] = set()
+    for page in pages:
+        for line in page.split("\n"):
+            words = _WORD.findall(line)
+            # First and last words of a line may be fragments, so only words
+            # inside a line count as evidence of what a whole word looks like.
+            vocab.update(w.lower() for w in words[1:-1])
+    return [_rejoin_page(page, vocab) for page in pages]
+
+
+def _rejoin_page(page: str, vocab: set[str]) -> str:
+    lines = page.split("\n")
+    out: list[str] = []
+    for line in lines:
+        if out and out[-1] and line:
+            prev = out[-1]
+            if line[0] in ".,;:)":
+                out[-1] = prev + line
+                continue
+            tail = _EDGE_TAIL.search(prev)
+            head = _EDGE_HEAD.match(line)
+            if tail and head:
+                a, b = tail.group(1).lower(), head.group(1).lower()
+                joined = a + b
+                if joined in vocab and not (a in vocab and b in vocab):
+                    out[-1] = prev + line
+                    continue
+        out.append(line)
+    return "\n".join(out)
 
 
 def windows_for(pages: list[str], keywords: list[str], radius: int = 1400,
